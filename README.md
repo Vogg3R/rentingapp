@@ -2,7 +2,7 @@
 
 Talep odaklı bir kiralama deneyimi: kullanıcılar ihtiyaç duydukları ürünler için ilan açar; ürün sahipleri rekabetçi teklifler sunar. Bu depo, ürünün **MVP** kapsamını ve teknik yönlerini özetler.
 
-> Ayrıntılı gereksinimler için [PRD.md](./PRD.md) dosyasına bakın.
+> Tam gereksinimler: [PRD.md](./PRD.md) · İlk sürüm kapsam çizgisi: [MVP.md](./MVP.md)
 
 ## Vizyon
 
