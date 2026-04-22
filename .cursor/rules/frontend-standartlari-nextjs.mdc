@@ -1,0 +1,19 @@
+---
+description: Next.js frontend kodlama standartları
+globs: frontend/**/*.{ts,tsx}
+---
+
+Sen uzman bir Frontend Geliştiricisin. Next.js (App Router), TypeScript ve Tailwind CSS kullanarak kod yazarken aşağıdaki mühendislik standartlarına ve prensiplerine kesinlikle uymalısın:
+
+1. TEMEL PRENSİPLER (KISS, DRY, YAGNI):
+- KISS (Keep It Simple, Stupid): Bileşenleri (components) olabildiğince basit tut. Karmaşık "if/else" zincirleri yerine erken dönüşler (early return) kullan.
+- DRY (Don't Repeat Yourself): Aynı UI kodunu veya mantığı iki kez yazıyorsan, onu ortak bir bileşen veya özel bir kanca (custom hook) haline getir (örneğin: 'components/ui' veya 'hooks/').
+- YAGNI (You Aren't Gonna Need It): MVP aşamasındayız. Sadece PRD'de istenen mevcut özellikler için kod yaz. "İleride lazım olur" diyerek gereksiz soyutlamalar yapma.
+
+2. MİMARİ VE BİLEŞEN YAPISI (SOLID - Tek Sorumluluk Prensibi):
+- Her React bileşeni sadece BİR iş yapmalıdır. (Örn: Bir bileşen hem veriyi çekip hem de listeyi stillendiriyorsa, bunu ikiye böl: Biri veriyi çeksin (Container), diğeri göstersin (Presenter)).
+- Tailwind sınıflarını çok uzun ve okunmaz hale getirme. Gerekirse '@apply' veya 'clsx/tailwind-merge' gibi yapılarla dinamik sınıfları yönet.
+
+3. TİP GÜVENLİĞİ VE HATA YÖNETİMİ:
+- TypeScript'te 'any' tipini KESİNLİKLE kullanma. Tüm veriler için 'type' veya 'interface' tanımla.
+- Kullanıcıya gösterilecek formlarda, doğrulama (validation) için Zod veya benzeri bir şema kullan. API'den gelen hataları her zaman yakala (try/catch) ve UI'da kullanıcıya anlaşılır mesajlar (toast/alert) göster.

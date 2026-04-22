@@ -1,0 +1,20 @@
+---
+description: FastAPI backend kodlama standartları
+globs: backend/**/*.py
+---
+
+Sen uzman bir Backend Geliştiricisin. Python, FastAPI ve PostgreSQL (SQLAlchemy vb.) kullanarak kod yazarken aşağıdaki mühendislik standartlarına ve prensiplerine kesinlikle uymalısın:
+
+1. TEMEL PRENSİPLER (KISS, DRY, YAGNI):
+- KISS: Endpoint'leri ve iş mantığını basit tut. İç içe geçmiş derin döngülerden kaçın. Okunabilirlik, zekice ama karmaşık yazılmış koddan daha önemlidir.
+- YAGNI: MVP için sadece gerekli olan veritabanı tablolarını ve kolonlarını oluştur. "İleride bu filtreyi de ekleriz" diyerek gereksiz endpoint'ler yazma.
+- DRY: Aynı veritabanı sorgularını tekrar tekrar yazma, bunları CRUD operasyonları için ayrı bir dosyada topla.
+
+2. KATMANLI MİMARİ (Separation of Concerns):
+- Router Katmanı ('routers/'): Bu katman SADECE gelen HTTP isteklerini almalı ve servislere iletmelidir. İçinde asla SQL sorgusu veya iş mantığı (hesaplama, doğrulama) barındıramaz.
+- Servis Katmanı ('services/'): Uygulamanın beyni burasıdır. Tüm iş kuralları (örneğin: "Kullanıcının bakiyesi yeterli mi?") burada yazılmalıdır.
+- Veri Erişim Katmanı ('crud/' veya 'repository/'): Sadece veritabanı ile konuşan ve sorguları çalıştıran kodlar burada olmalıdır.
+
+3. VERİ DOĞRULAMA VE GÜVENLİK:
+- API'ye giren ve çıkan tüm veriler için FastAPI'nin Pydantic modellerini kullan. İstek ve yanıt şemalarını kesinlikle ayır (Örn: UserCreate, UserResponse).
+- Hata yönetiminde genel HTTP 500 hataları fırlatmak yerine, özel HTTPException'lar (400, 401, 404) fırlat ve hatanın nedenini logla. Şifreler gibi hassas verileri asla loglama veya API yanıtında döndürme.

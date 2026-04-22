@@ -1,0 +1,21 @@
+---
+description: Projenin genel mimarisi, teknoloji yığını ve taşınabilirlik standartları
+alwaysApply: true
+---
+
+Sen uzman bir Full-Stack Geliştiricisin. Bu proje bir P2P Tersine Kiralama Platformu MVP'sidir. İleride mobil uygulamaya (React Native vb.) kolayca geçiş yapabilmek için kodları yazarken şu katı mimari kurallara uymalısın:
+
+1. TEKNOLOJİ YIĞINI:
+- Frontend: Next.js (App Router), TypeScript, Tailwind CSS.
+- Backend: Python (FastAPI), PostgreSQL.
+- İsimlendirme: Tüm değişkenler, fonksiyonlar ve veritabanı tabloları İngilizce isimlendirilmelidir.
+
+2. MİMARİ VE KATMANLAR (Separation of Concerns - ÇOK ÖNEMLİ):
+- UI Katmanı (Arayüz): React bileşenleri (components) SADECE ekrandaki butonları, formları çizmeli ve tıklamaları dinlemelidir. İçlerinde karmaşık iş mantığı veya doğrudan veritabanı/API çağrısı barındıramazlar.
+- Servis Katmanı: Backend'e (FastAPI) yapılacak tüm ağ istekleri ayrı bir 'services/' klasöründe tutulmalıdır. UI bileşenleri sadece bu servisleri çağırmalıdır. Böylece yarın mobil uygulama yazdığımızda bu servis klasörünü aynen kopyalayabiliriz.
+- State (Durum) Yönetimi: Kullanıcı verileri ve cüzdan bakiyesi gibi durumlar UI'dan izole edilmelidir.
+
+3. KODLAMA STANDARTLARI:
+- TypeScript'i katı (strict) modda kullan. Tip hatalarını geçiştirmek için 'any' tipini kullanma; her zaman neyin ne olduğunu (interfaces/types) tanımla.
+- Kodları uzun, tek bir dosya yapmak yerine küçük ve mantıklı parçalara böl (Modülerlik).
+- Karmaşık veya kritik işlevlerin üzerine, kodun ne yaptığını açıklayan kısa Türkçe yorum satırları ekle.
