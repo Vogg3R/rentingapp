@@ -53,6 +53,12 @@ Geleneksel pazar yeri modelini tersine çevirerek, talep ve teklifin buluştuğu
 
 Geliştirme aşamasında — çalıştırma ve kurulum adımları kod tabanı eklendikçe burada güncellenecektir.
 
+### Arayüz ön izlemesi
+
+EldenEle ana sayfa (öne çıkan ilanlar, arama ve üst şerit):
+
+![EldenEle ana sayfa ekran görüntüsü — öne çıkan ilanlar ve arama](./docs/screenshots/homepage.png)
+
 ## Lisans
 
 Belirtilmedi.
