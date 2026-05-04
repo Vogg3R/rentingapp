@@ -13,18 +13,18 @@ export function EldenEleLogoLink({
   return (
     <Link
       href="/"
-      className={`flex items-center gap-1.5 ${className}`}
+      className={`inline-flex items-center gap-[0.4em] text-2xl leading-none tracking-tight ${className}`}
       aria-label="EldenEle ana sayfa"
     >
       <Image
         src="/elden-ele-handshake-symbol.svg"
         alt=""
-        width={34}
-        height={34}
-        className="shrink-0"
+        width={96}
+        height={96}
+        className="h-[1.18em] w-[1.18em] shrink-0 translate-y-[0.03em]"
         priority
       />
-      <span className="text-2xl tracking-tight">
+      <span>
         <span className="font-bold text-[#2563EB]">Elden</span>
         <span className="font-normal text-slate-800 dark:text-slate-200">
           Ele
