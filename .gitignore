@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+.venv/
+venv/
+
+# Ortam dosyaları
+.env
+.env.local
