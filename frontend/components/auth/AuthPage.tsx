@@ -1,6 +1,7 @@
 "use client";
 
 import { EldenEleLogoLink } from "@/components/branding/EldenEleLogoLink";
+import { InteractivePageShell } from "@/components/layout/InteractivePageShell";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import {
@@ -147,13 +148,19 @@ export function AuthPage() {
     "w-full rounded-full border bg-gray-100 px-4 py-3 text-sm font-normal text-[var(--color-text)] outline-none transition-[box-shadow,border-color] placeholder:text-gray-400 focus-visible:ring-[3px] focus-visible:ring-primary/25 dark:bg-slate-800/70 dark:border-slate-600 dark:placeholder:text-slate-400";
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-[var(--color-app-bg)] font-sans text-[var(--color-text)]">
-      <div className="absolute left-4 top-4 z-10 sm:left-6 sm:top-5 md:left-8 md:top-6">
-        <EldenEleLogoLink variant="standalone" className="shrink-0" />
+    <InteractivePageShell
+      className="flex flex-col bg-[var(--color-app-bg)] font-sans text-[var(--color-text)]"
+      contentClassName="relative flex min-h-screen flex-1 flex-col"
+    >
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[11] flex items-start justify-between px-4 pt-4 sm:px-6 sm:pt-5 md:px-8 md:pt-6">
+        <div className="pointer-events-auto">
+          <EldenEleLogoLink variant="standalone" className="shrink-0" />
+        </div>
+        <div className="pointer-events-auto flex">
+          <ThemeToggle />
+        </div>
       </div>
-      <div className="absolute right-4 top-4 z-10 flex sm:right-6 sm:top-5 md:right-8 md:top-6">
-        <ThemeToggle />
-      </div>
+
       <div className="flex flex-1 items-center justify-center px-4 py-10 pb-24 pt-14 sm:pt-16 md:pb-28 md:pt-12">
         <div className="w-full max-w-md rounded-lg bg-[var(--color-card)] shadow-md ring-1 ring-black/5 dark:ring-white/10">
           <div role="tablist" aria-label="Kimlik doğrulama">
@@ -513,8 +520,10 @@ export function AuthPage() {
           </div>
         </div>
       </div>
-      <SiteFooter className="mt-auto" />
-    </div>
+      <div className="mt-auto w-full">
+        <SiteFooter />
+      </div>
+    </InteractivePageShell>
   );
 }
 

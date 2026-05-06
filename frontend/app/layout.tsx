@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { BottomNav } from "@/components/BottomNav";
+import { SearchModal } from "@/components/SearchModal";
 import { AppProviders } from "@/components/providers/AppProviders";
+import { SearchModalProvider } from "@/components/providers/SearchModalContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -22,7 +25,13 @@ export default function RootLayout({
   return (
     <html lang="tr" className={`${inter.variable} h-full`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col bg-app-bg font-sans text-text antialiased">
-        <AppProviders>{children}</AppProviders>
+        <SearchModalProvider>
+          <AppProviders>
+            {children}
+            <BottomNav />
+            <SearchModal />
+          </AppProviders>
+        </SearchModalProvider>
       </body>
     </html>
   );

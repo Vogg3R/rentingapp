@@ -1,20 +1,35 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { MapPin, Search } from "lucide-react";
+import { motion } from "framer-motion";
+import { Search } from "lucide-react";
+import { InteractivePageShell } from "@/components/layout/InteractivePageShell";
 import { FormSection } from "./FormSection";
 import { ListingFormHeader } from "./ListingFormHeader";
 import { PhotoDropzone } from "./PhotoDropzone";
 import { ListingPreviewCard } from "./ListingPreviewCard";
 import { LISTING_CATEGORIES } from "@/constants/listing-categories";
+import { StepperInput } from "@/components/ui/StepperInput";
+
+const MapWidget = dynamic(() => import("@/components/MapWidget"), {
+  ssr: false,
+  loading: () => (
+    <div
+      className="flex h-[400px] items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-xs text-slate-500 dark:border-slate-600 dark:bg-slate-800/80 dark:text-slate-400"
+      aria-hidden
+    >
+      Harita yükleniyor…
+    </div>
+  ),
+});
 
 export function ListingFormPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<string>(LISTING_CATEGORIES[0].value);
   const [photos, setPhotos] = useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [previewImageIndex, setPreviewImageIndex] = useState(0);
   const [description, setDescription] = useState("");
   const [dailyPrice, setDailyPrice] = useState("150");
@@ -24,16 +39,22 @@ export function ListingFormPage() {
   const [address, setAddress] = useState("");
   const [offersDelivery, setOffersDelivery] = useState(false);
 
+  const previewUrls = useMemo(
+    () => photos.map((p) => URL.createObjectURL(p)),
+    [photos]
+  );
+
   useEffect(() => {
-    const urls = photos.map((p) => URL.createObjectURL(p));
-    setPreviewUrls(urls);
-    setPreviewImageIndex((prev) =>
-      urls.length === 0 ? 0 : Math.min(prev, urls.length - 1)
-    );
     return () => {
-      urls.forEach((u) => URL.revokeObjectURL(u));
+      previewUrls.forEach((u) => URL.revokeObjectURL(u));
     };
-  }, [photos]);
+  }, [previewUrls]);
+
+  const previewCount = previewUrls.length;
+  const safePreviewImageIndex =
+    previewCount === 0
+      ? 0
+      : Math.min(Math.max(0, previewImageIndex), previewCount - 1);
 
   const handleSaveDraft = useCallback(() => {
     // İleride services/listings.ts üzerinden API'ye gidecek
@@ -46,7 +67,7 @@ export function ListingFormPage() {
   }, [router]);
 
   const previewImageSrc =
-    previewUrls.length > 0 ? previewUrls[previewImageIndex] ?? null : null;
+    previewCount > 0 ? previewUrls[safePreviewImageIndex] ?? null : null;
 
   const goPreviewPrev = useCallback(() => {
     setPreviewImageIndex((i) => {
@@ -78,15 +99,21 @@ export function ListingFormPage() {
     },
     [previewUrls.length]
   );
+  const inputClass =
+    "w-full rounded-xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-[var(--color-text)] shadow-sm outline-none transition-all placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 dark:border-slate-700/50 dark:bg-slate-900/50";
 
   return (
-    <div className="min-h-screen bg-[var(--color-app-bg)]">
+    <InteractivePageShell className="bg-[var(--color-app-bg)]">
       <ListingFormHeader
         onSaveDraft={handleSaveDraft}
         onPublish={handlePublish}
       />
 
-      <div className="mx-auto max-w-7xl px-4 py-8 pb-20">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mx-auto max-w-7xl px-4 py-8 pb-20"
+      >
         <h1 className="mb-2 text-2xl font-bold tracking-tight text-[var(--color-text)] sm:text-3xl">
           Eşya listele
         </h1>
@@ -97,7 +124,7 @@ export function ListingFormPage() {
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:items-start">
           <form
-            className="space-y-8"
+            className="min-w-0 space-y-8"
             onSubmit={(e) => e.preventDefault()}
             noValidate
           >
@@ -116,7 +143,7 @@ export function ListingFormPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Örn: Şarjlı matkap ve seti — 1 günlük"
-                  className="w-full rounded-xl border border-slate-200 bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text)] shadow-sm outline-none ring-primary/20 transition-shadow placeholder:text-slate-400 focus:border-primary focus:ring-2 dark:border-slate-600"
+                  className={inputClass}
                 />
               </div>
               <div>
@@ -130,7 +157,7 @@ export function ListingFormPage() {
                   id="listing-category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-[var(--color-app-bg)] px-4 py-3 text-sm font-medium text-[var(--color-text)] shadow-sm outline-none ring-primary/20 focus:border-primary focus:ring-2 dark:border-slate-600"
+                  className={`${inputClass} font-medium`}
                 >
                   {LISTING_CATEGORIES.map((c) => (
                     <option key={c.value} value={c.value}>
@@ -160,7 +187,7 @@ export function ListingFormPage() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Matkabın tüm uçları mevcuttur. Hafif çizikler var ama kusursuz çalışıyor. Lütfen temiz teslim edin."
-                  className="w-full resize-y rounded-xl border border-slate-200 bg-[var(--color-app-bg)] px-4 py-3 text-sm leading-relaxed text-[var(--color-text)] shadow-sm outline-none ring-primary/20 placeholder:text-slate-400 focus:border-primary focus:ring-2 dark:border-slate-600"
+                  className={`${inputClass} resize-y leading-relaxed`}
                 />
               </div>
             </FormSection>
@@ -178,15 +205,13 @@ export function ListingFormPage() {
                     <span className="flex items-center pl-3 text-sm font-semibold text-slate-500">
                       ₺
                     </span>
-                    <input
+                    <StepperInput
                       id="daily-price"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
                       value={dailyPrice}
-                      onChange={(e) => setDailyPrice(e.target.value)}
-                      className="min-w-0 flex-1 rounded-r-xl border-0 bg-transparent py-3 pr-3 text-sm text-[var(--color-text)] outline-none"
+                      onChange={setDailyPrice}
+                      min={0}
                       placeholder="150"
+                      className="min-w-0 flex-1 rounded-r-xl border-0 bg-transparent shadow-none focus-within:ring-0"
                     />
                   </div>
                 </div>
@@ -203,7 +228,7 @@ export function ListingFormPage() {
                     value={deposit}
                     onChange={(e) => setDeposit(e.target.value)}
                     placeholder="Eşya değeri kadar tutulabilir (örn: ₺5000)"
-                    className="w-full rounded-xl border border-slate-200 bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text)] shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-600"
+                    className={inputClass}
                   />
                 </div>
                 <div>
@@ -213,14 +238,13 @@ export function ListingFormPage() {
                   >
                     Minimum kiralama süresi (gün)
                   </label>
-                  <input
+                  <StepperInput
                     id="min-days"
-                    type="number"
-                    min={1}
                     value={minDays}
-                    onChange={(e) => setMinDays(e.target.value)}
+                    onChange={setMinDays}
+                    min={1}
                     placeholder="2"
-                    className="w-full rounded-xl border border-slate-200 bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text)] shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-600"
+                    className="rounded-xl border border-slate-200 bg-[var(--color-app-bg)] shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 dark:border-slate-600"
                   />
                 </div>
                 <div>
@@ -230,14 +254,13 @@ export function ListingFormPage() {
                   >
                     Maksimum kiralama süresi (gün)
                   </label>
-                  <input
+                  <StepperInput
                     id="max-days"
-                    type="number"
-                    min={1}
                     value={maxDays}
-                    onChange={(e) => setMaxDays(e.target.value)}
+                    onChange={setMaxDays}
+                    min={1}
                     placeholder="30"
-                    className="w-full rounded-xl border border-slate-200 bg-[var(--color-app-bg)] px-4 py-3 text-sm text-[var(--color-text)] shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-600"
+                    className="rounded-xl border border-slate-200 bg-[var(--color-app-bg)] shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 dark:border-slate-600"
                   />
                 </div>
               </div>
@@ -262,23 +285,12 @@ export function ListingFormPage() {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="Lefkoşa, Gönyeli, Atatürk Cad. …"
-                    className="w-full rounded-xl border border-slate-200 bg-[var(--color-app-bg)] py-3 pl-10 pr-4 text-sm text-[var(--color-text)] shadow-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-600"
+                    className={`${inputClass} py-3 pl-10 pr-4`}
                   />
                 </div>
               </div>
 
-              <div
-                className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-600 dark:bg-slate-800/80"
-                role="img"
-                aria-label="Harita önizlemesi (taslak)"
-              >
-                <div className="flex h-44 flex-col items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
-                  <MapPin className="size-8 text-primary/70" aria-hidden />
-                  <span className="text-xs font-medium">
-                    Harita entegrasyonu yakında
-                  </span>
-                </div>
-              </div>
+              <MapWidget />
 
               <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-[var(--color-app-bg)] p-4 shadow-sm dark:border-slate-600">
                 <input
@@ -307,11 +319,11 @@ export function ListingFormPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-primary/90"
               >
                 İlanı yayınla
-              </button>
-            </div>
+            </button>
+          </div>
           </form>
 
-          <aside className="lg:sticky lg:top-28">
+          <aside className="min-w-0 lg:sticky lg:top-28">
             <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               İlan önizleme
             </p>
@@ -320,15 +332,15 @@ export function ListingFormPage() {
               dailyPrice={dailyPrice}
               imageSrc={previewImageSrc}
               imageAlt={title.trim() || "İlan önizlemesi"}
-              galleryPhotoCount={previewUrls.length}
-              galleryActiveIndex={previewImageIndex}
+              galleryPhotoCount={previewCount}
+              galleryActiveIndex={safePreviewImageIndex}
               onGalleryPrev={goPreviewPrev}
               onGalleryNext={goPreviewNext}
               onGallerySelectIndex={goPreviewSelect}
             />
           </aside>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </InteractivePageShell>
   );
 }

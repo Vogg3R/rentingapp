@@ -37,7 +37,7 @@ export function ListingPreviewCard({
   const showGallery = galleryPhotoCount > 1;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200/90 bg-[var(--color-card)] shadow-md ring-1 ring-black/[0.04] dark:border-slate-600/70 dark:ring-white/5">
+    <div className="group overflow-hidden rounded-2xl border border-slate-200/90 bg-[var(--color-card)] shadow-md ring-1 ring-black/[0.04] transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_8px_30px_rgba(37,99,235,0.15)] dark:border-slate-600/70 dark:ring-white/5">
       <div className="relative aspect-[4/3] w-full bg-slate-100 dark:bg-slate-800">
         {imageSrc ? (
           <Image

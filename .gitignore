@@ -8,3 +8,7 @@ venv/
 # Ortam dosyaları
 .env
 .env.local
+
+# Kök dizinde yanlışlıkla oluşan npm kurulumları (frontend ayrı paket olarak tutulur)
+/node_modules/
+

@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from routers.listings import router as listings_router
+from routers.requests import router as requests_router
 
 app = FastAPI()
 
@@ -11,6 +13,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(listings_router, prefix="/listings", tags=["Listings"])
+app.include_router(requests_router, prefix="/requests", tags=["Requests"])
 
 # MVP: Bellek içi kullanıcı defteri (sunucu yeniden başlayınca sıfırlanır)
 _user_passwords: dict[str, str] = {}

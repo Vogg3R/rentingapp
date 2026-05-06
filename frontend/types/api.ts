@@ -7,6 +7,9 @@ export interface RentalListing {
   imageUrl: string;
   status: RentalStatus;
   pricePerDay: number;
+  sellerName?: string;
+  sellerRating?: number;
+  sellerAvatarUrl?: string;
 }
 
 /** Kök endpoint yanıtı: mevcut `mesaj` alanı korunur; `listings` isteğe bağlı. */
