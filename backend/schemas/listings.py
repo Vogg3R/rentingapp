@@ -13,7 +13,6 @@ class ListingCreate(BaseModel):
     min_days: int = Field(ge=1)
     max_days: int = Field(ge=1)
     location: str = Field(min_length=2, max_length=255)
-    owner_id: UUID
 
 
 class ListingRead(BaseModel):

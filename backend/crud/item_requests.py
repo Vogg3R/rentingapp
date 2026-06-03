@@ -33,7 +33,25 @@ def create_item_request(
     return row
 
 
-def list_item_requests(db: Session) -> list[ItemRequest]:
-    return list(
-        db.execute(select(ItemRequest).order_by(ItemRequest.created_at.desc())).scalars()
+def get_item_request_by_id(db: Session, request_id: UUID) -> ItemRequest | None:
+    return (
+        db.execute(select(ItemRequest).where(ItemRequest.id == request_id))
+        .scalar_one_or_none()
     )
+
+
+def list_item_requests_by_requester(db: Session, requester_id: UUID) -> list[ItemRequest]:
+    return list(
+        db.execute(
+            select(ItemRequest)
+            .where(ItemRequest.requester_id == requester_id)
+            .order_by(ItemRequest.created_at.desc())
+        ).scalars()
+    )
+
+
+def list_item_requests(db: Session, *, status: str | None = None) -> list[ItemRequest]:
+    stmt = select(ItemRequest).order_by(ItemRequest.created_at.desc())
+    if status is not None:
+        stmt = stmt.where(ItemRequest.status == status)
+    return list(db.execute(stmt).scalars())

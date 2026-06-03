@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 import logging
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -8,12 +10,20 @@ from sqlalchemy.orm import Session
 
 from database import engine
 from deps import get_db
+from jwt_tokens import create_access_token, create_refresh_token, decode_refresh_token
+from routers.admin import router as admin_router
+from routers.ai import router as ai_router
+from routers.deals import router as deals_router
 from routers.listings import router as listings_router
+from routers.profile import router as profile_router
 from routers.requests import router as requests_router
+from routers.wallet import router as wallet_router
 from schemas.users import UserCreate, UserResponse
 from services import accounts as accounts_service
 from services import home_feed
 from services.accounts import RegisterConflictError
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 logger = logging.getLogger("uvicorn.access")
 
@@ -38,6 +48,11 @@ app.add_middleware(
 
 app.include_router(listings_router, prefix="/listings", tags=["Listings"])
 app.include_router(requests_router, prefix="/requests", tags=["Requests"])
+app.include_router(wallet_router, prefix="/wallet", tags=["Wallet"])
+app.include_router(deals_router, prefix="/deals", tags=["Deals"])
+app.include_router(profile_router, prefix="/profile", tags=["Profile"])
+app.include_router(admin_router, prefix="/admin", tags=["Admin"])
+app.include_router(ai_router, prefix="/ai", tags=["AI Assistant"])
 
 
 @app.post("/users/register", response_model=UserResponse, status_code=201)
@@ -79,6 +94,19 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=6, max_length=256)
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str = Field(min_length=10)
+
+
+def _auth_tokens(user) -> dict:
+    return {
+        "access_token": create_access_token(user.id),
+        "refresh_token": create_refresh_token(user.id),
+        "token_type": "bearer",
+        "user": accounts_service.auth_user_payload(user),
+    }
+
+
 @app.post("/auth/register")
 def auth_register(body: RegisterRequest, db: Session = Depends(get_db)):
     """E-posta veya telefon + şifre; veritabanında bcrypt ile saklanır."""
@@ -94,11 +122,7 @@ def auth_register(body: RegisterRequest, db: Session = Depends(get_db)):
             status_code=409,
             detail="Bu e-posta veya telefon numarası zaten kayıtlı.",
         ) from None
-    return {
-        "access_token": "mvp-register-token",
-        "token_type": "bearer",
-        "user": accounts_service.auth_user_payload(user),
-    }
+    return _auth_tokens(user)
 
 
 @app.post("/auth/login")
@@ -117,8 +141,17 @@ def auth_login(body: LoginRequest, db: Session = Depends(get_db)):
         ) from None
     if code == "bad_password":
         raise HTTPException(status_code=401, detail="Şifre hatalı.") from None
-    return {
-        "access_token": "mvp-login-token",
-        "token_type": "bearer",
-        "user": accounts_service.auth_user_payload(user),
-    }
+    return _auth_tokens(user)
+
+
+@app.post("/auth/refresh")
+def auth_refresh(body: RefreshRequest, db: Session = Depends(get_db)):
+    from crud import users as users_crud
+
+    user_id = decode_refresh_token(body.refresh_token)
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Geçersiz veya süresi dolmuş refresh token.")
+    user = users_crud.get_user_by_id(db, user_id)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Kullanıcı bulunamadı.")
+    return _auth_tokens(user)

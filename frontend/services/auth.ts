@@ -17,6 +17,7 @@ function extractErrorMessage(body: unknown, fallback: string): string {
 function isAuthSessionUser(value: unknown): value is AuthSessionUser {
   if (typeof value !== "object" || value === null) return false;
   const u = value as Record<string, unknown>;
+  if (typeof u.id !== "string" || u.id.length === 0) return false;
   const emailOk = u.email === null || typeof u.email === "string";
   const phoneOk = u.phone === null || typeof u.phone === "string";
   if (!emailOk || !phoneOk) return false;
@@ -31,6 +32,7 @@ function isAuthSuccessResponse(body: unknown): body is AuthSuccessResponse {
   const o = body as Record<string, unknown>;
   return (
     typeof o.access_token === "string" &&
+    typeof o.refresh_token === "string" &&
     typeof o.token_type === "string" &&
     isAuthSessionUser(o.user)
   );

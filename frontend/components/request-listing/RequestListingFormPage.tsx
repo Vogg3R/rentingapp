@@ -9,6 +9,8 @@ import {
   type ClipboardEvent,
 } from "react";
 import dynamic from "next/dynamic";
+import { isLoggedIn } from "@/lib/session";
+import { createItemRequest } from "@/services/requests";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ImagePlus, Search } from "lucide-react";
@@ -97,10 +99,43 @@ export function RequestListingFormPage() {
     window.alert("İstek ilanı taslak olarak kaydedildi (MVP).");
   }, []);
 
-  const handlePublish = useCallback(() => {
-    window.alert("İstek ilanınız yayın akışına alındı (MVP).");
-    router.push("/");
-  }, [router]);
+  const handlePublish = useCallback(async () => {
+    if (!isLoggedIn()) {
+      router.push("/auth");
+      return;
+    }
+    const budget = Number(maxDailyBudget);
+    const days = Number(requestDurationCount) || 1;
+    if (!title.trim() || description.trim().length < 10 || !address.trim()) {
+      window.alert("Başlık, en az 10 karakter açıklama ve adres gerekli.");
+      return;
+    }
+    if (!budget || budget < 0) {
+      window.alert("Geçerli bir günlük bütçe girin.");
+      return;
+    }
+    const res = await createItemRequest({
+      title: title.trim(),
+      category,
+      description: description.trim(),
+      max_daily_budget: budget,
+      duration_days: days,
+      location: address.trim(),
+    });
+    if (!res.ok) {
+      window.alert(res.message);
+      return;
+    }
+    router.push(`/talep/${res.data.id}`);
+  }, [
+    router,
+    title,
+    category,
+    description,
+    maxDailyBudget,
+    requestDurationCount,
+    address,
+  ]);
 
   const handleConditionToggle = useCallback((value: string) => {
     setSelectedConditions((prev) =>

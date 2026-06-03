@@ -1,35 +1,38 @@
 # P2P Tersine Kiralama Platformu - LLM Geliştirme Planı
 
-Bu belge, yapay zeka (LLM) asistanının projeyi adım adım geliştirmesi için hazırlanmış bir yol haritasıdır. Proje, "Separation of Concerns" prensibine uygun olarak `frontend` ve `backend` olarak iki ayrı dizinde geliştirilecektir.
+Bu belge, yapay zeka (LLM) asistanının projeyi adım adım geliştirmesi için hazırlanmış bir yol haritasıdır.
 
-## Aşama 1: Proje İskeleti ve Kurulum (Şu Anki Aşama)
+## Aşama 1: Proje İskeleti ve Kurulum
 - [x] Frontend ve Backend klasörlerinin ayrılması.
 - [x] Cursor kurallarının (`.mdc` dosyaları) ayarlanması.
-- [ ] Backend: FastAPI ve sanal ortam (venv) kurulumu.
-- [ ] Frontend: Next.js, TypeScript ve Tailwind CSS kurulumu.
+- [x] Backend: FastAPI kurulumu.
+- [x] Frontend: Next.js, TypeScript ve Tailwind CSS kurulumu.
 
 ## Aşama 2: Veritabanı ve Modeller (Backend)
-- [ ] PostgreSQL bağlantısının kurulması (SQLAlchemy veya SQLModel ile).
-- [ ] Kullanıcı (User), İlan (Request) ve Teklif (Offer) tablolarının oluşturulması.
-- [ ] Pydantic şemalarının (Request/Response modelleri) yazılması.
+- [x] PostgreSQL bağlantısı (SQLAlchemy).
+- [x] User, ItemRequest, Listing, Offer, Wallet, RentalDeal, Message tabloları.
+- [x] Pydantic şemaları.
 
 ## Aşama 3: Temel API Uç Noktaları (Backend)
-- [ ] Kullanıcı kayıt ve giriş (JWT Auth) endpoint'leri.
-- [ ] İlan açma, listeleme ve detaya bakma endpoint'leri.
-- [ ] İlana teklif verme ve teklifleri listeleme endpoint'leri.
+- [x] Kullanıcı kayıt ve giriş (JWT + refresh).
+- [x] İlan ve talep CRUD.
+- [x] Teklif verme, listeleme, kabul.
 
 ## Aşama 4: Arayüz İskeleti (Frontend)
-- [ ] Ortak bileşenlerin (Navbar, Butonlar, Kartlar) Tailwind ile tasarlanması.
-- [ ] Ana sayfa (İlan arama/listeleme) tasarımının yapılması.
-- [ ] İlan detay ve teklif verme formlarının oluşturulması.
-- [ ] Kullanıcı paneli (Cüzdan ve aktif ilanlar) arayüzü.
+- [x] Ortak bileşenler, ana sayfa, formlar.
+- [x] Profil, cüzdan, talep/teklif, işlem sayfaları.
 
 ## Aşama 5: Entegrasyon ve İş Mantığı (Full-Stack)
-- [ ] Frontend 'services/' klasöründen Backend API'sine isteklerin atılması.
-- [ ] CORS ayarlarının yapılıp iki sistemin birbiriyle konuşturulması.
-- [ ] İlan açma ve teklif kabul etme senaryolarının uçtan uca test edilmesi.
+- [x] `services/` katmanından API.
+- [x] CORS.
+- [x] Uçtan uca kiralama senaryosu (manuel + `test_rental_flow.py`).
 
 ## Aşama 6: Ödeme Havuzu (Escrow) ve Sonlandırma
-- [ ] Iyzico (veya benzeri) API entegrasyonu ile cüzdan altyapısının kurulması.
-- [ ] Teklif kabulünde paranın havuzda tutulması mantığının eklenmesi.
-- [ ] Teslimat onayı ve paranın satıcıya aktarılması.
+- [x] Escrow kilidi ve hakediş aktarımı.
+- [x] Cüzdan simülasyon + Iyzico iskelet (anahtarlarla sandbox akışı).
+- [ ] Tam Iyzico Checkout Form SDK entegrasyonu (üretim öncesi).
+
+## Sonraki (V2)
+- [ ] Değerlendirme / yorumlar.
+- [ ] Staging deploy otomasyonu.
+- [ ] Native mobil istemci.

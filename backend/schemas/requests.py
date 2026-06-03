@@ -12,7 +12,6 @@ class ItemRequestCreate(BaseModel):
     max_daily_budget: float = Field(ge=0)
     duration_days: int = Field(ge=1)
     location: str = Field(min_length=2, max_length=255)
-    requester_id: UUID
 
 
 class ItemRequestRead(BaseModel):

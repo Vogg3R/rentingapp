@@ -55,7 +55,7 @@ export function BottomNav() {
         </Link>
 
         <Link
-          href="/"
+          href="/mesajlar"
           className={`${baseItemClass} ${
             isActive("/mesajlar") ? "text-blue-600" : "text-slate-500"
           }`}

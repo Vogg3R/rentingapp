@@ -12,8 +12,17 @@ export interface RentalListing {
   sellerAvatarUrl?: string;
 }
 
+export interface ApiHomeItemRequest {
+  id: string;
+  title: string;
+  maxDailyBudget: number;
+  durationDays: number;
+  location: string;
+}
+
 /** Kök endpoint yanıtı: mevcut `mesaj` alanı korunur; `listings` isteğe bağlı. */
 export interface ApiRootResponse {
   mesaj: string;
   listings?: RentalListing[];
+  itemRequests?: ApiHomeItemRequest[];
 }

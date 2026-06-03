@@ -10,7 +10,9 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
   const [playClickAnim, setPlayClickAnim] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    queueMicrotask(() => setMounted(true));
+  }, []);
 
   const isDark = mounted && resolvedTheme === "dark";
 

@@ -17,10 +17,10 @@ import { Box, Search } from "lucide-react";
 import Link from "next/link";
 
 const REQUEST_DEMOS = [
-  { id: "req-1", title: "GoPro Hero 11", ownerName: "Caner T.", budget: 200 },
-  { id: "req-2", title: "Akülü Matkap", ownerName: "Ayşe K.", budget: 180 },
-  { id: "req-3", title: "PS5 + 2 Kol", ownerName: "Bora Y.", budget: 500 },
-  { id: "req-4", title: "Kamp Çadırı (4 Kişilik)", ownerName: "Merve A.", budget: 160 },
+  { id: "req-1", title: "GoPro Hero 11", budget: 200, days: 3, location: "Lefkoşa" },
+  { id: "req-2", title: "Akülü Matkap", budget: 180, days: 2, location: "Girne" },
+  { id: "req-3", title: "PS5 + 2 Kol", budget: 500, days: 7, location: "Güzelyurt" },
+  { id: "req-4", title: "Kamp Çadırı (4 Kişilik)", budget: 160, days: 5, location: "Mağusa" },
 ] as const;
 
 const INITIAL_DATA: ApiRootResponse = {
@@ -42,6 +42,16 @@ export default function Home() {
   }, []);
 
   const listings = resolveListingsForDisplay(data);
+  const itemRequests =
+    data.itemRequests && data.itemRequests.length > 0
+      ? data.itemRequests
+      : REQUEST_DEMOS.map((d) => ({
+          id: d.id,
+          title: d.title,
+          maxDailyBudget: d.budget,
+          durationDays: d.days,
+          location: d.location,
+        }));
 
   return (
     <>
@@ -108,7 +118,7 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {REQUEST_DEMOS.map((requestItem, index) => (
+              {itemRequests.map((requestItem, index) => (
                 <motion.div
                   key={requestItem.id}
                   initial={{ opacity: 0, y: 40 }}
@@ -137,29 +147,23 @@ export default function Home() {
                       <h3 className="text-base font-bold text-slate-800 dark:text-[var(--color-text)]">
                         {requestItem.title}
                       </h3>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex size-7 items-center justify-center rounded-full bg-slate-200 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200">
-                            {requestItem.ownerName.slice(0, 1)}
-                          </span>
-                          <span className="text-sm text-slate-600 dark:text-slate-300">
-                            {requestItem.ownerName}
-                          </span>
-                        </div>
-                        <span className="text-sm text-amber-500">★ 4.8</span>
-                      </div>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">
+                        {requestItem.location} · {requestItem.durationDays} gün
+                      </p>
 
                       <p className="text-sm font-semibold text-slate-700 dark:text-[var(--color-text)]">
                         Maks. Bütçe:{" "}
-                        <span className="text-primary">₺{requestItem.budget} / Gün</span>
+                        <span className="text-primary">
+                          ₺{requestItem.maxDailyBudget} / Gün
+                        </span>
                       </p>
 
-                      <button
-                        type="button"
-                        className="mt-auto rounded-lg border border-primary/50 bg-primary/10 px-4 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary/20"
+                      <Link
+                        href={`/talep/${requestItem.id}`}
+                        className="mt-auto inline-flex justify-center rounded-lg border border-primary/50 bg-primary/10 px-4 py-2 text-sm font-bold text-primary transition-colors hover:bg-primary/20"
                       >
                         Teklif Ver
-                      </button>
+                      </Link>
                     </div>
                   </article>
                 </motion.div>

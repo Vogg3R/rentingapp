@@ -3,7 +3,9 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from models import User
+from decimal import Decimal
+
+from models import User, Wallet
 
 
 def get_user_by_id(db: Session, user_id: UUID) -> User | None:
@@ -27,6 +29,8 @@ def create_user(
 ) -> User:
     user = User(email=email, phone=phone, password_hash=password_hash)
     db.add(user)
+    db.flush()
+    db.add(Wallet(user_id=user.id, balance=Decimal("0")))
     db.commit()
     db.refresh(user)
     return user

@@ -81,4 +81,8 @@ def authenticate_with_identifier(db: Session, identifier: str, password: str) ->
 
 def auth_user_payload(user: User) -> dict:
     """Frontend AuthSessionUser ile uyumlu gövde."""
-    return {"email": user.email, "phone": user.phone}
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "phone": user.phone,
+    }

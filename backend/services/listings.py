@@ -5,16 +5,11 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from crud import listings as listings_crud
-from crud import users as users_crud
-from models import Listing
+from models import Listing, User
 from schemas.listings import ListingCreate
 
 
-def create_listing(db: Session, body: ListingCreate) -> Listing:
-    owner = users_crud.get_user_by_id(db, body.owner_id)
-    if owner is None:
-        raise HTTPException(status_code=400, detail="Geçersiz sahip (owner_id) kullanıcı bulunamadı.")
-
+def create_listing(db: Session, owner: User, body: ListingCreate) -> Listing:
     if body.max_days < body.min_days:
         raise HTTPException(
             status_code=400,
@@ -24,7 +19,7 @@ def create_listing(db: Session, body: ListingCreate) -> Listing:
     price = Decimal(str(body.daily_price))
     return listings_crud.create_listing(
         db,
-        owner_id=body.owner_id,
+        owner_id=owner.id,
         title=body.title.strip(),
         description=body.description.strip(),
         category=body.category.strip(),
@@ -35,5 +30,17 @@ def create_listing(db: Session, body: ListingCreate) -> Listing:
     )
 
 
-def list_listings(db: Session) -> list[Listing]:
-    return listings_crud.list_listings(db)
+def get_listing(db: Session, listing_id: UUID) -> Listing:
+    row = listings_crud.get_listing_by_id(db, listing_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="İlan bulunamadı.")
+    return row
+
+
+def list_listings(
+    db: Session,
+    *,
+    q: str | None = None,
+    category: str | None = None,
+) -> list[Listing]:
+    return listings_crud.list_listings(db, q=q, category=category)

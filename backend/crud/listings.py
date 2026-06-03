@@ -35,5 +35,33 @@ def create_listing(
     return row
 
 
-def list_listings(db: Session) -> list[Listing]:
-    return list(db.execute(select(Listing).order_by(Listing.created_at.desc())).scalars())
+def get_listing_by_id(db: Session, listing_id: UUID) -> Listing | None:
+    return (
+        db.execute(select(Listing).where(Listing.id == listing_id)).scalar_one_or_none()
+    )
+
+
+def list_listings(
+    db: Session,
+    *,
+    q: str | None = None,
+    category: str | None = None,
+    owner_id: UUID | None = None,
+) -> list[Listing]:
+    stmt = select(Listing).order_by(Listing.created_at.desc())
+    if owner_id is not None:
+        stmt = stmt.where(Listing.owner_id == owner_id)
+    if category:
+        stmt = stmt.where(Listing.category.ilike(f"%{category.strip()}%"))
+    if q:
+        pattern = f"%{q.strip()}%"
+        stmt = stmt.where(
+            (Listing.title.ilike(pattern))
+            | (Listing.description.ilike(pattern))
+            | (Listing.location.ilike(pattern))
+        )
+    return list(db.execute(stmt).scalars())
+
+
+def list_listings_by_owner(db: Session, owner_id: UUID) -> list[Listing]:
+    return list_listings(db, owner_id=owner_id)

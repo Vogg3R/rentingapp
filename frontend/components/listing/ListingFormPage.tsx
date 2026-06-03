@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Search } from "lucide-react";
+import { Search, Sparkles } from "lucide-react";
 import { InteractivePageShell } from "@/components/layout/InteractivePageShell";
 import { FormSection } from "./FormSection";
 import { ListingFormHeader } from "./ListingFormHeader";
@@ -12,6 +12,9 @@ import { PhotoDropzone } from "./PhotoDropzone";
 import { ListingPreviewCard } from "./ListingPreviewCard";
 import { LISTING_CATEGORIES } from "@/constants/listing-categories";
 import { StepperInput } from "@/components/ui/StepperInput";
+import { isLoggedIn } from "@/lib/session";
+import { generateListingWithAI } from "@/services/ai";
+import { createListing } from "@/services/listings";
 
 const MapWidget = dynamic(() => import("@/components/MapWidget"), {
   ssr: false,
@@ -38,6 +41,9 @@ export function ListingFormPage() {
   const [deposit, setDeposit] = useState("");
   const [address, setAddress] = useState("");
   const [offersDelivery, setOffersDelivery] = useState(false);
+  const [rawAiText, setRawAiText] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const previewUrls = useMemo(
     () => photos.map((p) => URL.createObjectURL(p)),
@@ -61,10 +67,79 @@ export function ListingFormPage() {
     window.alert("Taslak kaydedildi (MVP: gerçek API henüz yok).");
   }, []);
 
-  const handlePublish = useCallback(() => {
-    // İleride başarılı API yanıtı sonrasına taşınacak
-    router.push("/");
-  }, [router]);
+  const generateWithAI = useCallback(async () => {
+    if (!isLoggedIn()) {
+      router.push("/auth");
+      return;
+    }
+    const text = rawAiText.trim();
+    if (text.length < 3) {
+      window.alert("Lütfen en az 3 karakterlik bir metin girin.");
+      return;
+    }
+
+    setAiLoading(true);
+    setAiError(null);
+
+    const res = await generateListingWithAI(text);
+
+    setAiLoading(false);
+
+    if (!res.ok) {
+      setAiError(res.message);
+      return;
+    }
+
+    setTitle(res.data.title.slice(0, 70));
+    setDescription(res.data.description);
+    setCategory(res.data.category);
+    setDailyPrice(String(res.data.daily_price));
+  }, [rawAiText, router]);
+
+  const handlePublish = useCallback(async () => {
+    if (!isLoggedIn()) {
+      router.push("/auth");
+      return;
+    }
+    const price = Number(dailyPrice);
+    const min = Number(minDays) || 1;
+    const max = Number(maxDays) || min;
+    if (!title.trim() || description.trim().length < 10 || !address.trim()) {
+      window.alert("Başlık, en az 10 karakter açıklama ve adres gerekli.");
+      return;
+    }
+    if (!price || price < 0) {
+      window.alert("Geçerli günlük fiyat girin.");
+      return;
+    }
+    if (max < min) {
+      window.alert("Maksimum gün, minimum günden küçük olamaz.");
+      return;
+    }
+    const res = await createListing({
+      title: title.trim(),
+      description: description.trim(),
+      category,
+      daily_price: price,
+      min_days: min,
+      max_days: max,
+      location: address.trim(),
+    });
+    if (!res.ok) {
+      window.alert(res.message);
+      return;
+    }
+    router.push(`/ilan/${res.data.id}`);
+  }, [
+    router,
+    title,
+    description,
+    category,
+    dailyPrice,
+    minDays,
+    maxDays,
+    address,
+  ]);
 
   const previewImageSrc =
     previewCount > 0 ? previewUrls[safePreviewImageIndex] ?? null : null;
@@ -123,11 +198,60 @@ export function ListingFormPage() {
         </p>
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:items-start">
-          <form
-            className="min-w-0 space-y-8"
-            onSubmit={(e) => e.preventDefault()}
-            noValidate
-          >
+          <div className="min-w-0 space-y-8">
+            <section className="rounded-2xl border border-violet-200/40 bg-gradient-to-br from-violet-50/80 to-indigo-50/50 p-5 shadow-lg backdrop-blur-md dark:border-violet-500/20 dark:from-violet-950/30 dark:to-indigo-950/20 sm:p-6">
+              <div className="mb-4 flex items-center gap-2">
+                <Sparkles
+                  className="size-5 text-violet-600 dark:text-violet-400"
+                  aria-hidden
+                />
+                <h2 className="text-sm font-bold text-[var(--color-text)]">
+                  AI ile İlan Oluştur
+                </h2>
+              </div>
+              <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
+                Eşyanızı kısaca anlatın; yapay zeka başlık, açıklama, kategori
+                ve günlük fiyat alanlarını sizin için doldursun.
+              </p>
+              <label
+                htmlFor="ai-raw-text"
+                className="mb-1.5 block text-sm font-bold text-[var(--color-text)]"
+              >
+                Dağınık metin
+              </label>
+              <textarea
+                id="ai-raw-text"
+                rows={4}
+                value={rawAiText}
+                onChange={(e) => setRawAiText(e.target.value)}
+                disabled={aiLoading}
+                placeholder="Örn: 2 yıllık Bosch matkabım var, tüm uçlarıyla birlikte. Hafta sonu kiralanabilir, günde 200 TL civarı düşünüyorum."
+                className={`${inputClass} mb-4 resize-y leading-relaxed disabled:cursor-not-allowed disabled:opacity-60`}
+              />
+              {aiError ? (
+                <p
+                  className="mb-4 text-sm font-medium text-red-600 dark:text-red-400"
+                  role="alert"
+                >
+                  {aiError}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => void generateWithAI()}
+                disabled={aiLoading || rawAiText.trim().length < 3}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Sparkles className="size-4" aria-hidden />
+                {aiLoading ? "Yükleniyor..." : "✨ Yapay Zeka ile Doldur"}
+              </button>
+            </section>
+
+            <form
+              className="space-y-8"
+              onSubmit={(e) => e.preventDefault()}
+              noValidate
+            >
             <FormSection step={1} title="Temel bilgiler">
               <div>
                 <label
@@ -321,7 +445,8 @@ export function ListingFormPage() {
                 İlanı yayınla
             </button>
           </div>
-          </form>
+            </form>
+          </div>
 
           <aside className="min-w-0 lg:sticky lg:top-28">
             <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">

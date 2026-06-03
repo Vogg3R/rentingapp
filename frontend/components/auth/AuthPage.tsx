@@ -4,6 +4,7 @@ import { EldenEleLogoLink } from "@/components/branding/EldenEleLogoLink";
 import { InteractivePageShell } from "@/components/layout/InteractivePageShell";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { persistAuthSession } from "@/lib/session";
 import {
   loginWithIdentifierPassword,
   registerWithContactPassword,
@@ -84,11 +85,7 @@ export function AuthPage() {
       return;
     }
 
-    try {
-      sessionStorage.setItem("elden_ele_token", result.data.access_token);
-    } catch {
-      /* yok say */
-    }
+    persistAuthSession(result.data);
     router.push("/");
   }
 
@@ -132,11 +129,7 @@ export function AuthPage() {
       return;
     }
 
-    try {
-      sessionStorage.setItem("elden_ele_token", result.data.access_token);
-    } catch {
-      /* ignore */
-    }
+    persistAuthSession(result.data);
     router.push("/");
   }
 

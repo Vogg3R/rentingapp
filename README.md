@@ -1,63 +1,88 @@
-# P2P Tersine Kiralama Platformu (MVP)
+# P2P Tersine Kiralama Platformu (MVP) — EldenEle
 
-Talep odaklı bir kiralama deneyimi: kullanıcılar ihtiyaç duydukları ürünler için ilan açar; ürün sahipleri rekabetçi teklifler sunar. Bu depo, ürünün **MVP** kapsamını ve teknik yönlerini özetler.
+Talep odaklı kiralama: kullanıcılar ihtiyaç duydukları ürünler için **istek ilanı** açar; ürün sahipleri **teklif** verir. Kabul sonrası **escrow**, **mesajlaşma** ve **teslim onayı** ile döngü tamamlanır.
 
-> Tam gereksinimler: [PRD.md](./PRD.md) · İlk sürüm kapsam çizgisi: [MVP.md](./MVP.md)
+> [PRD.md](./PRD.md) · [MVP.md](./MVP.md) · [progress.md](./progress.md) · [plan.md](./plan.md)
 
-## Vizyon
+## Teknoloji
 
-Geleneksel pazar yeri modelini tersine çevirerek, talep ve teklifin buluştuğu dinamik bir kiralama ekosistemi hedeflenir.
+| Katman | Yığın |
+|--------|--------|
+| Frontend | Next.js 16, TypeScript, Tailwind CSS |
+| Backend | FastAPI, SQLAlchemy, PostgreSQL |
+| Auth | JWT + refresh token |
+| Ödeme | MVP simülasyon; opsiyonel Iyzico sandbox iskelet |
 
-## Kullanıcı rolleri
+## Hızlı başlangıç
 
-| Rol | Açıklama |
+### 1. PostgreSQL
+
+Veritabanı: `eldenele_db` (varsayılan kullanıcı/şifre `postgres` / `123456` — `backend/database.py`).
+
+### 2. Backend
+
+```bash
+cd backend
+py -m pip install -r requirements.txt
+# Ortam değişkenleri için kökteki .env.example dosyasına bakın
+py -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+API dokümantasyonu: http://127.0.0.1:8000/docs
+
+### 3. Frontend
+
+```bash
+cd frontend
+npm install
+# frontend/.env.local: BACKEND_URL=http://127.0.0.1:8000
+npm run dev
+```
+
+Uygulama: http://localhost:3000
+
+### 4. Testler
+
+```bash
+cd backend
+set DATABASE_URL=postgresql://postgres:123456@127.0.0.1:5432/eldenele_db
+py -m pytest -q
+```
+
+## Ortam değişkenleri
+
+Kök `.env.example` dosyasındaki değişkenleri kopyalayın:
+
+- `JWT_SECRET`, `ADMIN_API_KEY`
+- `IYZICO_API_KEY`, `IYZICO_SECRET_KEY` (opsiyonel)
+- `BACKEND_URL` (frontend)
+
+## Admin (çekim onayı)
+
+```bash
+curl -H "X-Admin-Key: YOUR_ADMIN_KEY" http://127.0.0.1:8000/admin/withdrawals/pending
+curl -X POST -H "X-Admin-Key: YOUR_ADMIN_KEY" http://127.0.0.1:8000/admin/withdrawals/{id}/approve
+```
+
+Anlaşmazlık iadesi: `POST /admin/deals/{deal_id}/refund`
+
+## Ana sayfalar
+
+| Yol | Açıklama |
 |-----|----------|
-| **Talep Eden (Requester)** | İhtiyaç duyduğu ürün, tarih aralığı ve konum ile ilan açan kullanıcı |
-| **Tedarikçi (Owner)** | İlanları inceleyen, uygun ürünü olan ve fiyat teklifi veren kullanıcı |
+| `/auth` | Giriş / üye ol |
+| `/istek-ilani` | Talep ilanı aç |
+| `/ilan-ver` | Ürün ilanı aç |
+| `/talep/[id]` | Teklif ver / kabul et |
+| `/ilan/[id]` | Ürün ilanı detay |
+| `/cuzdan` | Bakiye yükle / çekim |
+| `/mesajlar` | Kiralama işlemleri |
+| `/islem/[dealId]` | Mesaj + teslim onayı |
+| `/profil` | İlanlarım / isteklerim |
 
-## MVP özellikleri
+## Arayüz ön izlemesi
 
-### İlan yönetimi
-- Talep ilanı oluşturma (ürün, kategori, tarih aralığı, lokasyon)
-- Tedarikçilerden teklif alma
-- Talep edenin teklifleri karşılaştırıp kabul etmesi
-
-### Cüzdan ve escrow
-- Kredi kartı ile yükleme, IBAN ile çekme
-- Teklif kabulünde ödemenin havuz (escrow) hesabında tutulması
-- Teslimat onayı sonrası tedarikçiye hakediş aktarımı
-
-### İletişim ve teslimat
-- Kabul sonrası basit mesajlaşma ve konum/detay paylaşımı
-- Yüz yüze teslimat için kullanıcı onayı
-
-## Teknoloji (hedef mimari)
-
-- **Backend:** Python (FastAPI veya Django)
-- **Veritabanı:** PostgreSQL
-- **Ödeme:** Iyzico veya benzeri ödeme geçidi
-
-## Kalite ve süreç
-
-- Cüzdan ve ödeme akışları için güçlü birim testleri
-- Teklif ve kabul akışları için entegrasyon testleri
-- GitHub Actions ile CI/CD ve staging dağıtımı
-
-## Yol haritası (V2)
-
-- Gelişmiş puanlama ve yorumlar
-- Teslimatta QR kod doğrulama
-- AI destekli fiyat önerisi
-
-## Proje durumu
-
-Geliştirme aşamasında — çalıştırma ve kurulum adımları kod tabanı eklendikçe burada güncellenecektir.
-
-### Arayüz ön izlemesi
-
-EldenEle ana sayfa (öne çıkan ilanlar, arama ve üst şerit):
-
-![EldenEle ana sayfa ekran görüntüsü — öne çıkan ilanlar ve arama](./docs/screenshots/homepage.png)
+![EldenEle ana sayfa](./docs/screenshots/homepage.png)
 
 ## Lisans
 
