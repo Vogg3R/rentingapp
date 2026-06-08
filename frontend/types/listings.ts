@@ -1,3 +1,9 @@
+export interface ListingOwnerPreview {
+  id: string;
+  name: string | null;
+  avatar_base64: string | null;
+}
+
 export interface Listing {
   id: string;
   owner_id: string;
@@ -10,6 +16,7 @@ export interface Listing {
   location: string;
   status: string;
   created_at: string;
+  owner?: ListingOwnerPreview | null;
 }
 
 export interface ListingCreatePayload {

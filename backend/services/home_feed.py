@@ -24,6 +24,9 @@ def root_payload(db: Session) -> dict:
                 "imageUrl": f"https://picsum.photos/seed/{row.id.hex[:16]}/800/520",
                 "status": "available" if row.status == "active" else "rented",
                 "pricePerDay": float(row.daily_price),
+                "category": row.category,
+                "sellerName": row.owner.name if row.owner else None,
+                "sellerAvatarUrl": row.owner.avatar_base64 if row.owner else None,
             }
             for row in listing_rows
         ]

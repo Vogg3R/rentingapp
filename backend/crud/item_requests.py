@@ -2,7 +2,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from models import ItemRequest
 
@@ -34,10 +34,11 @@ def create_item_request(
 
 
 def get_item_request_by_id(db: Session, request_id: UUID) -> ItemRequest | None:
-    return (
-        db.execute(select(ItemRequest).where(ItemRequest.id == request_id))
-        .scalar_one_or_none()
-    )
+    return db.execute(
+        select(ItemRequest)
+        .options(joinedload(ItemRequest.requester))
+        .where(ItemRequest.id == request_id)
+    ).scalar_one_or_none()
 
 
 def list_item_requests_by_requester(db: Session, requester_id: UUID) -> list[ItemRequest]:

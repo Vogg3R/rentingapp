@@ -8,5 +8,4 @@ class AIGenerateRequest(BaseModel):
 class AIGenerateResponse(BaseModel):
     title: str
     description: str
-    category: str
     daily_price: float = Field(ge=0)

@@ -4,13 +4,19 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Search, Sparkles } from "lucide-react";
+import { LEFKOSA_CENTER } from "@/constants/google-maps";
+import type { MapCoordinates } from "@/types/map";
+import { Sparkles } from "lucide-react";
 import { InteractivePageShell } from "@/components/layout/InteractivePageShell";
 import { FormSection } from "./FormSection";
 import { ListingFormHeader } from "./ListingFormHeader";
 import { PhotoDropzone } from "./PhotoDropzone";
 import { ListingPreviewCard } from "./ListingPreviewCard";
-import { LISTING_CATEGORIES } from "@/constants/listing-categories";
+import {
+  CATEGORY_SELECT_PLACEHOLDER,
+  CategorySelect,
+} from "@/components/ui/CategorySelect";
+import { AppToast, type AppToastType } from "@/components/ui/AppToast";
 import { StepperInput } from "@/components/ui/StepperInput";
 import { isLoggedIn } from "@/lib/session";
 import { generateListingWithAI } from "@/services/ai";
@@ -31,7 +37,7 @@ const MapWidget = dynamic(() => import("@/components/MapWidget"), {
 export function ListingFormPage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<string>(LISTING_CATEGORIES[0].value);
+  const [category, setCategory] = useState<string>(CATEGORY_SELECT_PLACEHOLDER);
   const [photos, setPhotos] = useState<File[]>([]);
   const [previewImageIndex, setPreviewImageIndex] = useState(0);
   const [description, setDescription] = useState("");
@@ -40,10 +46,14 @@ export function ListingFormPage() {
   const [maxDays, setMaxDays] = useState("30");
   const [deposit, setDeposit] = useState("");
   const [address, setAddress] = useState("");
+  const [mapPosition, setMapPosition] = useState<MapCoordinates>(LEFKOSA_CENTER);
   const [offersDelivery, setOffersDelivery] = useState(false);
   const [rawAiText, setRawAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: AppToastType; message: string } | null>(
+    null
+  );
 
   const previewUrls = useMemo(
     () => photos.map((p) => URL.createObjectURL(p)),
@@ -56,6 +66,16 @@ export function ListingFormPage() {
     };
   }, [previewUrls]);
 
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const showToast = useCallback((message: string, type: AppToastType = "error") => {
+    setToast({ message, type });
+  }, []);
+
   const previewCount = previewUrls.length;
   const safePreviewImageIndex =
     previewCount === 0
@@ -64,8 +84,8 @@ export function ListingFormPage() {
 
   const handleSaveDraft = useCallback(() => {
     // İleride services/listings.ts üzerinden API'ye gidecek
-    window.alert("Taslak kaydedildi (MVP: gerçek API henüz yok).");
-  }, []);
+    showToast("Taslak kaydedildi (MVP: gerçek API henüz yok).", "success");
+  }, [showToast]);
 
   const generateWithAI = useCallback(async () => {
     if (!isLoggedIn()) {
@@ -74,7 +94,7 @@ export function ListingFormPage() {
     }
     const text = rawAiText.trim();
     if (text.length < 3) {
-      window.alert("Lütfen en az 3 karakterlik bir metin girin.");
+      showToast("Lütfen en az 3 karakterlik bir metin girin.");
       return;
     }
 
@@ -92,9 +112,8 @@ export function ListingFormPage() {
 
     setTitle(res.data.title.slice(0, 70));
     setDescription(res.data.description);
-    setCategory(res.data.category);
     setDailyPrice(String(res.data.daily_price));
-  }, [rawAiText, router]);
+  }, [rawAiText, router, showToast]);
 
   const handlePublish = useCallback(async () => {
     if (!isLoggedIn()) {
@@ -105,15 +124,19 @@ export function ListingFormPage() {
     const min = Number(minDays) || 1;
     const max = Number(maxDays) || min;
     if (!title.trim() || description.trim().length < 10 || !address.trim()) {
-      window.alert("Başlık, en az 10 karakter açıklama ve adres gerekli.");
+      showToast("Başlık, en az 10 karakter açıklama ve adres gerekli.");
+      return;
+    }
+    if (!category.trim()) {
+      showToast("Lütfen bir kategori seçin.");
       return;
     }
     if (!price || price < 0) {
-      window.alert("Geçerli günlük fiyat girin.");
+      showToast("Geçerli günlük fiyat girin.");
       return;
     }
     if (max < min) {
-      window.alert("Maksimum gün, minimum günden küçük olamaz.");
+      showToast("Maksimum gün, minimum günden küçük olamaz.");
       return;
     }
     const res = await createListing({
@@ -126,7 +149,7 @@ export function ListingFormPage() {
       location: address.trim(),
     });
     if (!res.ok) {
-      window.alert(res.message);
+      showToast(res.message);
       return;
     }
     router.push(`/ilan/${res.data.id}`);
@@ -139,6 +162,7 @@ export function ListingFormPage() {
     minDays,
     maxDays,
     address,
+    showToast,
   ]);
 
   const previewImageSrc =
@@ -210,8 +234,8 @@ export function ListingFormPage() {
                 </h2>
               </div>
               <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
-                Eşyanızı kısaca anlatın; yapay zeka başlık, açıklama, kategori
-                ve günlük fiyat alanlarını sizin için doldursun.
+                Eşyanızı kısaca anlatın; yapay zeka başlık, açıklama ve günlük
+                fiyat alanlarını sizin için doldursun. Kategoriyi siz seçersiniz.
               </p>
               <label
                 htmlFor="ai-raw-text"
@@ -270,26 +294,12 @@ export function ListingFormPage() {
                   className={inputClass}
                 />
               </div>
-              <div>
-                <label
-                  htmlFor="listing-category"
-                  className="mb-1.5 block text-sm font-bold text-[var(--color-text)]"
-                >
-                  Kategori
-                </label>
-                <select
-                  id="listing-category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className={`${inputClass} font-medium`}
-                >
-                  {LISTING_CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <CategorySelect
+                id="listing-category"
+                value={category}
+                onChange={setCategory}
+                label="Kategori seçin"
+              />
             </FormSection>
 
             <FormSection step={2} title="Fotoğraf yükle">
@@ -391,30 +401,14 @@ export function ListingFormPage() {
             </FormSection>
 
             <FormSection step={5} title="Lokasyon ve teslimat">
-              <div>
-                <label
-                  htmlFor="listing-address"
-                  className="mb-1.5 block text-sm font-bold text-[var(--color-text)]"
-                >
-                  Adres arama
-                </label>
-                <div className="relative">
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-                    aria-hidden
-                  />
-                  <input
-                    id="listing-address"
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Lefkoşa, Gönyeli, Atatürk Cad. …"
-                    className={`${inputClass} py-3 pl-10 pr-4`}
-                  />
-                </div>
-              </div>
-
-              <MapWidget />
+              <MapWidget
+                searchInputId="listing-address"
+                searchLabel="Adres arama"
+                address={address}
+                onAddressChange={setAddress}
+                position={mapPosition}
+                onPositionChange={setMapPosition}
+              />
 
               <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-[var(--color-app-bg)] p-4 shadow-sm dark:border-slate-600">
                 <input
@@ -466,6 +460,8 @@ export function ListingFormPage() {
           </aside>
         </div>
       </motion.div>
+
+      {toast ? <AppToast message={toast.message} type={toast.type} /> : null}
     </InteractivePageShell>
   );
 }

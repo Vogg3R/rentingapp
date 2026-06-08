@@ -1,5 +1,13 @@
-import { DEMO_LISTINGS } from "@/constants/demo-listings";
 import type { ApiRootResponse, RentalListing } from "@/types/api";
+
+/** Anasayfa kategori filtresi */
+export function filterListingsByCategory(
+  listings: RentalListing[],
+  categorySlug: string | null
+): RentalListing[] {
+  if (!categorySlug) return listings;
+  return listings.filter((item) => item.category === categorySlug);
+}
 
 function isRentalListing(value: unknown): value is RentalListing {
   if (typeof value !== "object" || value === null) return false;
@@ -11,6 +19,8 @@ function isRentalListing(value: unknown): value is RentalListing {
     (typeof o.sellerRating === "number" && Number.isFinite(o.sellerRating));
   const hasValidSellerAvatarUrl =
     o.sellerAvatarUrl === undefined || typeof o.sellerAvatarUrl === "string";
+  const hasValidCategory =
+    o.category === undefined || typeof o.category === "string";
 
   return (
     typeof o.id === "string" &&
@@ -21,14 +31,14 @@ function isRentalListing(value: unknown): value is RentalListing {
     Number.isFinite(o.pricePerDay) &&
     hasValidSellerName &&
     hasValidSellerRating &&
-    hasValidSellerAvatarUrl
+    hasValidSellerAvatarUrl &&
+    hasValidCategory
   );
 }
 
-/** API'den gelen liste varsa onu kullan; yoksa demo veriyi döndürür. */
+/** API'den gelen geçerli ilan listesini döndürür; yoksa boş dizi. */
 export function resolveListingsForDisplay(data: ApiRootResponse): RentalListing[] {
   const raw = data.listings;
-  if (!Array.isArray(raw) || raw.length === 0) return DEMO_LISTINGS;
-  const valid = raw.filter(isRentalListing);
-  return valid.length > 0 ? valid : DEMO_LISTINGS;
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  return raw.filter(isRentalListing);
 }

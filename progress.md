@@ -1,6 +1,6 @@
 # EldenEle — Proje İlerlemesi
 
-Bu dosya, projede şimdiye kadar yapılanları **kronolojik sırayla** özetler. Son güncelleme: 3 Haziran 2026.
+Bu dosya, projede şimdiye kadar yapılanları **kronolojik sırayla** özetler. Son güncelleme: 8 Haziran 2026 (akşam oturumu).
 
 ---
 
@@ -31,7 +31,7 @@ Bu dosya, projede şimdiye kadar yapılanları **kronolojik sırayla** özetler.
 
 - **Marka:** Uygulama adı EldenEle; metadata, `icon.svg` ve el sıkışma sembolü (`elden-ele-handshake-symbol.svg`) güncellendi.
 - **Logo:** İki el kenetlenme motifi ve orantılı EldenEle yazı tipi (`EldenEleLogoLink`).
-- **Ana sayfa:** Öne çıkan ilanlar grid’i, arama, üst şerit; backend kapalıyken demo ilanlara düşen `fetchRootApi` mantığı.
+- **Ana sayfa:** Öne çıkan ilanlar grid’i, arama, üst şerit; backend kapalıyken uyarı mesajı (demo ilan fallback kaldırıldı — bkz. §18).
 - **Ekran görüntüsü:** Ana sayfa görseli `docs/screenshots/homepage.png` olarak README’ye eklendi.
 
 ---
@@ -59,9 +59,9 @@ Bu dosya, projede şimdiye kadar yapılanları **kronolojik sırayla** özetler.
 
 ## 6. Harita ve zengin UX
 
-- **Harita:** `MapWidget` — react-leaflet + Carto koyu tema.
+- **Harita:** `MapWidget` — Google Maps (`@react-google-maps/api`); Places Autocomplete, sürüklenebilir pin, karanlık mod stili (bkz. §18.8).
 - **Animasyon:** Framer Motion ile ana sayfa parallax, istek ilanı sayfasında tema ve scroll davranışları.
-- **Kategoriler ve sabitler:** `listing-categories`, demo ilanlar, motion sabitleri.
+- **Kategoriler ve sabitler:** `listing-categories`, `CategorySelect`, motion sabitleri.
 
 ---
 
@@ -149,7 +149,9 @@ Bu dosya, projede şimdiye kadar yapılanları **kronolojik sırayla** özetler.
 | GET | `/deals` | Kullanıcının kiralama işlemleri |
 | GET/POST | `/deals/{id}/messages` | Mesajlaşma |
 | POST | `/deals/{id}/confirm-delivery` | Teslim onayı (talep eden) → hakediş |
-| POST | `/ai/generate-listing` | AI ile ilan alanları üret (auth) — bkz. §13 |
+| POST | `/ai/generate-listing` | AI ile ilan alanları üret (auth) — bkz. §13, §16 |
+| PUT | `/profile/me` | Profil güncelle (ad, konum, bio, sosyal, fotoğraf Base64) — bkz. §15 |
+| POST | `/auth/google` | Google id_token ile giriş / otomatik üyelik — bkz. §17 |
 
 ### 9.3 Frontend — yeni / güncellenen parçalar
 
@@ -166,8 +168,8 @@ Bu dosya, projede şimdiye kadar yapılanları **kronolojik sırayla** özetler.
 | `RequestListingFormPage.tsx` | Yayınlama → `POST /requests` → `/talep/{id}` |
 | `RequestDetailPage.tsx` | Teklif ver / kabul et UI |
 | `WalletPage.tsx` + `/cuzdan` | Cüzdan ekranı |
-| `DealWorkspacePage.tsx` + `/islem/[dealId]` | Mesaj + teslim onayı |
-| `/mesajlar` | İşlem listesi |
+| `DealWorkspacePage.tsx` + `/islem/[dealId]` | Mesaj + teslim onayı + temalı toast/dialog (§18.4) |
+| `/mesajlar` | İşlem listesi + ilan kiralama sohbetleri (§18.2) |
 | `app/page.tsx` | Talep kartları API’den; “Teklif Ver” → `/talep/{id}` |
 | `BottomNav.tsx` | Mesajlar linki `/mesajlar` |
 | `UserProfilePage.tsx` | Cüzdan linki |
@@ -215,7 +217,7 @@ Bu dosya, projede şimdiye kadar yapılanları **kronolojik sırayla** özetler.
 2. Talep eden: `/cuzdan` → demo yükleme (ör. ₺500).
 3. Talep eden: `/istek-ilani` → yayınla.
 4. Tedarikçi: `/talep/{id}` → teklif ver.
-5. Talep eden: teklifi **Kabul et (escrow)**.
+5. Talep eden: teklifi **Kabul et**.
 6. `/mesajlar` → işlem → mesajlaş.
 7. Talep eden: **Teslim aldım — onayla**.
 
@@ -239,7 +241,9 @@ Aynı gün devamında kalan MVP maddeleri tamamlandı — ayrıntılar **§12**.
 | 8 | PostgreSQL, CRUD, servisler, DB destekli API’ler |
 | 9 | *(yerel / henüz commit yok)* MVP döngüsü (§9): JWT, teklif, escrow, mesaj, CI |
 | 10 | *(yerel / henüz commit yok)* Kalan maddeler (§12): refresh, ilan API, profil, admin, Iyzico iskelet, E2E, README |
-| 11 | *(yerel / henüz commit yok)* AI İlan Asistanı (§13): Gemini backend, `/ilan-ver` AI UI |
+| 11 | AI İlan Asistanı (§13): Gemini backend, `/ilan-ver` AI UI — `3bfe8c4` |
+| 12 | *(yerel / henüz commit yok)* İlan detay, profil, istek AI, Google OAuth (§14–§17) |
+| 13 | *(yerel / henüz commit yok)* Kategori filtresi, mesajlaşma, UX iyileştirmeleri, Google Maps (§18) |
 
 ---
 
@@ -415,7 +419,219 @@ Kullanıcıların dağınık metin girdisini yapılandırılmış ilan alanları
 | AI backend endpoint | **Tamamlandı** |
 | Gemini entegrasyonu (google-genai) | **Tamamlandı** |
 | `/ilan-ver` AI UI | **Tamamlandı** |
-| Git commit | **Bekliyor** — §13 dahil yerel değişiklikler |
+| Git commit (§13) | **Tamamlandı** — `3bfe8c4` GitHub’a push |
+| Git commit (§14–§17) | **Bekliyor** — yerel değişiklikler |
+
+---
+
+## 14. İlan detay sayfası — pazar yeri düzeni (Haziran 2026)
+
+`/ilan/[id]` sayfası metin-only görünümden modern kiralama deneyimine taşındı.
+
+### 14.1 Frontend
+
+| Dosya | Ne yapıldı |
+|-------|------------|
+| `ListingDetailPage.tsx` | `md:grid-cols-3` düzen: sol 2 kolon (görsel, başlık, rozetler, şartlar, açıklama); sağ 1 kolon yapışkan kiralama kartı |
+| `ListingRentalCard.tsx` | Günlük fiyat, tarih seçimi, toplam gün/fiyat hesabı, `min_days` / `max_days` doğrulama, **Kiralama Talebi Gönder** |
+| `DateRangePicker.tsx` | Native `type="date"` yerine özel takvim; aralık seçimi (pill vurgu), açık/koyu tema, **Temizle** / **Bugün** |
+| `lib/dates.ts` | ISO tarih yardımcıları, kiralama günü hesabı |
+
+**Aksiyon:** Giriş yoksa `/auth`; giriş varsa kiralama talebi → ilan sahibiyle mesajlaşma (§18.2).
+
+---
+
+## 15. Profil güncelleme ve UX (Haziran 2026)
+
+### 15.1 Backend
+
+| Dosya / alan | Ne yapıldı |
+|--------------|------------|
+| `models.py` | `name`, `location`, `bio`, `instagram`, `linkedin`, `avatar_base64`, `cover_base64` |
+| `database.py` | `apply_schema_patches()` — mevcut DB’ye sütun ekleme |
+| `schemas/profile.py` | `ProfileUpdate`, genişletilmiş `ProfileSummary` |
+| `routers/profile.py` | `PUT /profile/me` |
+| `crud/users.py` | `update_user_profile`, `create_user(name=...)` |
+| `services/profile.py` | `update_profile`, özet yanıtta profil alanları |
+
+### 15.2 Frontend
+
+| Dosya / sayfa | Ne yapıldı |
+|---------------|------------|
+| `ProfileEditPage.tsx` | Form ön-doldurma, kaydetme, loading, toast, `/profil` yönlendirme |
+| `services/profile.ts` | `updateProfile` (JWT) |
+| `UserProfilePage.tsx` | Kapak gradient düzeltmesi (mavi bug kaldırıldı); isim kapak üzerinde `text-white`; tutarlı outlined butonlar |
+| `ProfileEditPage.tsx` | Kapak/avatar tıklanabilir; `input[type=file]` + `URL.createObjectURL` önizleme; Base64 ile kayıt |
+| `lib/profile-images.ts` | `fileToDataUrl`, e-posta fallback adı |
+
+---
+
+## 16. İstek ilanı — AI asistanı (Haziran 2026)
+
+`ListingFormPage` ile aynı AI altyapısı `/istek-ilani` sayfasına taşındı.
+
+| Dosya | Ne yapıldı |
+|-------|------------|
+| `RequestListingFormPage.tsx` | **AI ile İstek Oluştur** kutusu (textarea + buton) |
+| `services/ai.ts` | Mevcut `generateListingWithAI` + `normalizeAiCategory` (export) |
+| State eşlemesi | `title`, `category` (label), `description`, `daily_price` → `maxDailyBudget` |
+| UX | Yükleniyor..., başarı/hata toast bildirimleri |
+
+Backend değişikliği yok — `POST /ai/generate-listing` yeniden kullanıldı.
+
+---
+
+## 17. Google ile giriş (OAuth) (Haziran 2026)
+
+### 17.1 Backend
+
+| Dosya / alan | Ne yapıldı |
+|--------------|------------|
+| `requirements.txt` | `google-auth>=2.0.0` |
+| `routers/auth.py` | `/auth/login`, `/auth/register`, `/auth/refresh`, **`/auth/google`** (main’den taşındı) |
+| `schemas/auth.py` | `GoogleAuthRequest` (`credential` = id_token) |
+| `services/google_auth.py` | `verify_oauth2_token` |
+| `services/accounts.py` | `login_or_register_with_google` — yoksa rastgele şifre ile otomatik üye |
+
+### 17.2 Frontend
+
+| Dosya | Ne yapıldı |
+|-------|------------|
+| `AuthPage.tsx` | Apple/Facebook kaldırıldı; Giriş + Üye ol sekmelerinde Google butonu |
+| `GoogleAuthButton.tsx` | `@react-oauth/google` `GoogleLogin`, tam genişlik |
+| `AppProviders.tsx` | `GoogleOAuthProvider` |
+| `services/auth.ts` | `loginWithGoogle(credential)` → `POST /auth/google` |
+
+### 17.3 Ortam değişkenleri
+
+```env
+# backend/.env
+GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+
+# frontend/.env.local
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+```
+
+Google Cloud Console: Authorized JavaScript origins → `http://localhost:3000`
+
+### 17.4 Güncel durum
+
+| Alan | Durum |
+|------|--------|
+| Google OAuth backend | **Tamamlandı** |
+| Google OAuth UI | **Tamamlandı** |
+| Üretim OAuth ayarları | **Bekliyor** — canlı domain + secret’lar |
+
+---
+
+## 18. Geliştirme oturumu — kategori, mesajlaşma, UX ve Google Maps (8 Haziran 2026)
+
+Bu oturumda ana sayfa filtreleme, ilan/talep mesajlaşması, profil/header iyileştirmeleri, mock veri temizliği ve harita entegrasyonu tamamlandı.
+
+### 18.1 Kategori seçimi ve ana sayfa filtresi
+
+| Dosya / alan | Ne yapıldı |
+|--------------|------------|
+| `constants/listing-categories.ts`, `lib/categories.ts` | Ortak kategori listesi ve slug/label eşlemesi |
+| `CategorySelect.tsx` | `-Seçiniz-` yalnızca placeholder; listede görünmez |
+| `CategoryFilterProvider` | Layout’ta global kategori filtresi |
+| `AppHeader.tsx` | Üst şerit kategorileri filtreye bağlandı |
+| `app/page.tsx` | Seçili kategoriye göre ilan grid’i filtrelenir |
+| `backend/services/home_feed.py`, `crud/listings.py` | Feed’e `category`; tam slug eşleşmesi |
+| AI asistanı | `category` alanı AI yanıtından ve formlardan kaldırıldı — kategori kullanıcı seçer |
+
+### 18.2 İlan kiralama talebi ve mesajlaşma
+
+**Backend**
+
+| Dosya / alan | Ne yapıldı |
+|--------------|------------|
+| `models.py` | `ListingRentalRequest`, `ListingConversation`, `ListingMessage` |
+| `routers/listings.py` (genişletme) | `POST /listings/{id}/rental-requests`; mesaj listesi/gönderimi; inbox özeti |
+| `services/listing_rentals.py`, `crud/listing_rentals.py` | Kiralama talebi ve sohbet iş kuralları |
+| `schemas/listing_rentals.py` | Mesajlarda `sender_name` |
+
+**Frontend**
+
+| Dosya / sayfa | Ne yapıldı |
+|---------------|------------|
+| `services/listing-rentals.ts`, `types/listing-rentals.ts` | API servis katmanı |
+| `RentalConversationChat.tsx`, `ListingRentalChatPage.tsx` | Sohbet UI; gönderen adı gösterimi |
+| `ListingDetailPage.tsx` | Kiralama talebi gönder → mesajlar akışı |
+| `app/mesajlar/page.tsx` | İlan kiralama sohbetleri + kabul edilen teklifler listesi |
+| `app/mesajlar/kiralama/[requestId]/page.tsx` | Kiralama sohbet detay rotası |
+| `AppHeader.tsx` | Masaüstü **Mesajlar** butonu (`/mesajlar`) |
+
+**Ortam:** `frontend/.env.local` → `NEXT_PUBLIC_BACKEND_URL=http://127.0.0.1:8000` (stale backend “Not Found” hatası giderildi).
+
+### 18.3 Profil, header ve kart iyileştirmeleri
+
+| Dosya / sayfa | Ne yapıldı |
+|---------------|------------|
+| `home_feed.py` + `RentalCard.tsx` | İlan kartlarında sahip adı ve profil fotoğrafı |
+| `RequestDetailPage.tsx` | İstek ilanı detayı — iki kolon düzen, `RequestOfferCard`, `RequestRequesterCard` |
+| `crud/item_requests.py` | Talep detayında `requester` önizlemesi (`avatar_base64`) |
+| `AppHeader.tsx` | Giriş yapınca profil butonunda kullanıcının kendi avatarı (`/profile/me`); tema toggle ile hizalama düzeltmesi |
+| `AppHeader.tsx` + `lib/session.ts` | Çıkış: `clearAuthSession()` + `/` yönlendirme; temalı profil menüsü |
+
+### 18.4 Bildirimler ve işlem ekranı UX
+
+| Dosya | Ne yapıldı |
+|-------|------------|
+| `AppToast.tsx` | Temalı alt toast (success / error) |
+| `ListingFormPage.tsx`, `ListingDetailPage.tsx`, `RequestDetailPage.tsx` | `window.alert` → `AppToast` |
+| `PromptDialog.tsx` | Temalı metin girişli dialog (tarayıcı `prompt` yerine) |
+| `DealWorkspacePage.tsx` | Teslim onayı → yeşil toast; anlaşmazlık → `PromptDialog` + toast |
+| `RequestDetailPage.tsx` | “Kabul et (escrow)” → **Kabul et** |
+| `app/mesajlar/page.tsx` | Kabul edilen tekliflerde `supplier` / `escrow` metinleri kaldırıldı; yalnızca **Teklif: ₺…** |
+| `app/mesajlar/page.tsx` | `offer_price` string geldiğinde `Number()` ile formatlama (runtime hata düzeltmesi) |
+
+### 18.5 Mock veri temizliği ve ana sayfa düzeni
+
+| Değişiklik | Açıklama |
+|------------|----------|
+| `constants/demo-listings.ts` | **Silindi** |
+| `lib/listings.ts` | API boşsa boş dizi; demo fallback yok |
+| `app/page.tsx` | `REQUEST_DEMOS` kaldırıldı; boş durum mesajları + CTA butonları |
+| `app/page.tsx` | Yükleme sırasında `ListingSkeleton`; veri gelince gerçek ilan veya boş durum |
+| `app/page.tsx` | **Kiralamak İstediğiniz Ürün İçin İlan Açın** butonu → **İstek İlanları** başlığının sağına taşındı |
+| `services/api.ts` | “Örnek ilanlar gösteriliyor” metni kaldırıldı |
+
+### 18.6 Google Maps harita entegrasyonu
+
+| Dosya / alan | Ne yapıldı |
+|--------------|------------|
+| `package.json` | `@react-google-maps/api`, `@types/google.maps` eklendi; `leaflet`, `react-leaflet` kaldırıldı |
+| `MapWidget.tsx` | Tamamen yenilendi: `useLoadScript`, `GoogleMap`, sürüklenebilir `Marker`, `Autocomplete` |
+| `constants/google-maps.ts` | Lefkoşa merkez, karanlık mod stil JSON, Places kütüphanesi sabiti |
+| `types/map.ts` | `MapCoordinates` tipi |
+| `ListingFormPage.tsx`, `RequestListingFormPage.tsx` | `address` + `mapPosition` state; harita `onChange` entegrasyonu |
+| `.env.example` | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` şablonu |
+
+**Harita davranışı:** Tıklama / pin sürükleme → `lat/lng` güncelleme; reverse geocoding ile adres alanı; Places arama → harita odaklanır. Koordinatlar şimdilik yalnızca form state’inde (backend’de `lat/lng` alanı henüz yok).
+
+### 18.7 Güncel durum tablosu (bu oturum)
+
+| Alan | Durum |
+|------|--------|
+| Kategori filtresi (header + ana sayfa) | **Tamamlandı** |
+| İlan kiralama talebi + mesajlaşma | **Tamamlandı** |
+| Profil fotoğrafı header’da | **Tamamlandı** |
+| Temalı toast / dialog (alert/prompt kaldırıldı) | **Tamamlandı** |
+| Mock demo ilanlar | **Kaldırıldı** |
+| Google Maps harita | **Tamamlandı** |
+| Koordinatların API’ye kaydı | **Bekliyor** |
+| Git commit (§18) | **Bekliyor** — yerel değişiklikler |
+
+### 18.8 Ortam değişkenleri (ek)
+
+```env
+# frontend/.env.local
+NEXT_PUBLIC_BACKEND_URL=http://127.0.0.1:8000
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=...
+```
+
+Google Cloud Console: **Maps JavaScript API**, **Places API**, **Geocoding API** etkin olmalı.
 
 ---
 
@@ -425,4 +641,6 @@ Kullanıcıların dağınık metin girdisini yapılandırılmış ilan alanları
 2. **Değerlendirme / yorumlar** — profil “Değerlendirmeler” sekmesi.
 3. **Staging deploy** — barındırma sağlayıcısı secret’ları ile CI job’ı doldurma.
 4. **Playwright** — tarayıcı tabanlı E2E.
-5. **Git commit** — §9 + §12 + §13 değişikliklerinin tek veya bölünmüş commit’lerle kaydı.
+5. **Git commit** — §14–§18 değişikliklerinin kaydı ve push.
+6. **Konum koordinatları** — `lat/lng` alanlarının backend modeline ve ilan/talep API’sine eklenmesi.
+7. **İstek ilanı mesajları** — `Mesajlar` sayfasında item request sohbetlerinin listelenmesi (opsiyonel).

@@ -37,3 +37,21 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 class Base(DeclarativeBase):
     """Tüm ORM modelleri bu tabanı kullanır."""
+
+
+def apply_schema_patches() -> None:
+    """Mevcut PostgreSQL tablolarına yeni sütunları güvenle ekler (create_all ALTER yapmaz)."""
+    from sqlalchemy import text
+
+    patches = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(120)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram VARCHAR(64)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS linkedin VARCHAR(255)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_base64 TEXT",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_base64 TEXT",
+    ]
+    with engine.begin() as conn:
+        for sql in patches:
+            conn.execute(text(sql))

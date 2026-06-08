@@ -1,3 +1,5 @@
+import secrets
+
 from sqlalchemy.orm import Session
 
 from contact_norm import normalize_contact
@@ -86,3 +88,27 @@ def auth_user_payload(user: User) -> dict:
         "email": user.email,
         "phone": user.phone,
     }
+
+
+def login_or_register_with_google(
+    db: Session,
+    *,
+    email: str,
+    name: str | None,
+) -> User:
+    """Google OAuth: mevcut kullanıcıyı döner veya güvenli rastgele şifre ile yeni hesap açar."""
+    user = users_crud.get_user_by_email(db, email)
+    if user is None:
+        random_password = secrets.token_urlsafe(32)
+        return users_crud.create_user(
+            db,
+            email=email,
+            phone=None,
+            password_hash=pwd_context.hash(random_password),
+            name=name,
+        )
+
+    if name and not user.name:
+        users_crud.update_user_profile(db, user, name=name)
+
+    return user

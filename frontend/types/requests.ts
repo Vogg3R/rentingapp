@@ -1,3 +1,9 @@
+export interface RequesterPreview {
+  id: string;
+  name: string | null;
+  avatar_base64: string | null;
+}
+
 export interface ItemRequest {
   id: string;
   requester_id: string;
@@ -9,6 +15,7 @@ export interface ItemRequest {
   location: string;
   status: string;
   created_at: string;
+  requester?: RequesterPreview | null;
 }
 
 export interface ItemRequestCreatePayload {

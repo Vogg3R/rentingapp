@@ -1,16 +1,26 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { InteractivePageShell } from "@/components/layout/InteractivePageShell";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { fallbackNameFromEmail } from "@/lib/profile-images";
 import { isLoggedIn } from "@/lib/session";
+import { deleteListing } from "@/services/listings";
 import { fetchMyProfile } from "@/services/profile";
 import type { ProfileSummary } from "@/types/profile";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, MapPin, ShieldCheck, Star, UserRoundCheck } from "lucide-react";
+import {
+  BadgeCheck,
+  CheckCircle2,
+  MapPin,
+  ShieldCheck,
+  Star,
+  Trash2,
+  UserRoundCheck,
+} from "lucide-react";
 
 type ProfileTab = "listings" | "requests" | "reviews";
 
@@ -20,11 +30,35 @@ const TAB_LABELS: Record<ProfileTab, string> = {
   reviews: "Değerlendirmeler",
 };
 
+const OUTLINE_BTN_CLASS =
+  "inline-flex h-10 shrink-0 items-center justify-center rounded-xl border border-white/40 bg-white/5 px-5 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/15";
+
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+}
+
+function resolveDisplayName(profile: ProfileSummary | null): string {
+  if (!profile) return "Kullanıcı";
+  if (profile.name?.trim()) return profile.name.trim();
+  return (
+    fallbackNameFromEmail(profile.email) ?? profile.phone ?? "Kullanıcı"
+  );
+}
+
 export function UserProfilePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ProfileTab>("listings");
   const [profile, setProfile] = useState<ProfileSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deletingListingId, setDeletingListingId] = useState<string | null>(null);
+  const [pendingDeleteListing, setPendingDeleteListing] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoggedIn()) {
@@ -37,10 +71,51 @@ export function UserProfilePage() {
     });
   }, [router]);
 
-  const displayName = useMemo(() => {
-    if (!profile) return "Kullanıcı";
-    return profile.email?.split("@")[0] ?? profile.phone ?? "Kullanıcı";
-  }, [profile]);
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const handleRequestDeleteListing = useCallback(
+    (listingId: string, title: string) => {
+      setPendingDeleteListing({ id: listingId, title });
+    },
+    []
+  );
+
+  const handleCancelDeleteListing = useCallback(() => {
+    if (deletingListingId) return;
+    setPendingDeleteListing(null);
+  }, [deletingListingId]);
+
+  const handleConfirmDeleteListing = useCallback(async () => {
+    if (!pendingDeleteListing) return;
+
+    const listingId = pendingDeleteListing.id;
+    setDeletingListingId(listingId);
+    const result = await deleteListing(listingId);
+    setDeletingListingId(null);
+
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+
+    setPendingDeleteListing(null);
+    setProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            listings: prev.listings.filter((item) => item.id !== listingId),
+            listings_count: Math.max(0, prev.listings_count - 1),
+          }
+        : prev
+    );
+    setToast("İlan başarıyla silindi");
+  }, [pendingDeleteListing]);
+
+  const displayName = useMemo(() => resolveDisplayName(profile), [profile]);
 
   const tabCounts = useMemo(
     () => ({
@@ -60,62 +135,110 @@ export function UserProfilePage() {
         className="mx-auto w-full max-w-7xl px-4 py-6 pb-16"
       >
         {error && (
-          <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>
+          <p className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800 dark:bg-red-950/40 dark:text-red-300">
+            {error}
+          </p>
         )}
 
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-[var(--color-card)] shadow-sm dark:border-slate-700">
-          <div className="relative h-44 w-full bg-gradient-to-r from-blue-600/80 to-indigo-600/80" />
+          <div className="relative h-48 w-full border-b border-slate-700">
+            {profile?.cover_base64 ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.cover_base64}
+                alt="Profil kapağı"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-800 to-slate-900" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
 
-          <div className="px-4 pb-6 sm:px-6">
-            <div className="-mt-14 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="absolute bottom-0 left-0 right-0 flex flex-col gap-4 px-4 pb-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
               <div className="flex items-end gap-4">
-                <div className="relative size-28 overflow-hidden rounded-full border-4 border-slate-900 bg-slate-200 shadow-xl">
-                  <Image
-                    src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"
-                    alt={`${displayName} profil`}
-                    fill
-                    className="object-cover"
-                    unoptimized
-                  />
+                <div className="relative size-24 shrink-0 overflow-hidden rounded-full border-4 border-slate-800 bg-slate-700 shadow-xl ring-2 ring-slate-600/80 sm:size-28">
+                  {profile?.avatar_base64 ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={profile.avatar_base64}
+                      alt={`${displayName} profil`}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-slate-800 text-xl font-bold text-white sm:text-2xl">
+                      {initialsFromName(displayName)}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <h1 className="text-3xl font-extrabold tracking-tight text-[var(--color-text)]">
+                <div className="min-w-0 pb-0.5">
+                  <h1 className="truncate text-2xl font-bold tracking-tight text-white sm:text-3xl">
                     {displayName}
                   </h1>
-                  <p className="mt-1 flex items-center gap-1 text-sm text-slate-600 dark:text-slate-300">
-                    <MapPin className="size-4 text-[#2563EB]" />
-                    {profile?.email ?? profile?.phone ?? "—"}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {profile?.deals_count ?? 0} tamamlanan / aktif işlem
+                  <p className="mt-1 flex items-center gap-1 text-sm text-slate-300">
+                    <MapPin className="size-4 shrink-0 text-slate-400" />
+                    <span className="truncate">
+                      {profile?.location?.trim() || "Konum belirtilmedi"}
+                    </span>
                   </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  href="/cuzdan"
-                  className="inline-flex rounded-full border border-primary/40 bg-primary/10 px-4 py-2 text-sm font-bold text-primary"
-                >
+              <div className="flex shrink-0 flex-wrap gap-3">
+                <Link href="/cuzdan" className={OUTLINE_BTN_CLASS}>
                   Cüzdan
                 </Link>
-                <Link
-                  href="/profil/duzenle"
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-[#2563EB]/30 bg-[#2563EB]/5 px-4 text-sm font-bold text-[#2563EB]"
-                >
+                <Link href="/profil/duzenle" className={OUTLINE_BTN_CLASS}>
                   Profili Düzenle
                 </Link>
               </div>
             </div>
+          </div>
+
+          <div className="px-4 pb-6 pt-5 sm:px-6">
+            {profile?.bio?.trim() ? (
+              <p className="max-w-2xl text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+                {profile.bio}
+              </p>
+            ) : null}
+            <p className="mt-2 text-xs text-slate-500">
+              {profile?.email ?? profile?.phone ?? "—"} ·{" "}
+              {profile?.deals_count ?? 0} tamamlanan / aktif işlem
+            </p>
+
+            {(profile?.instagram || profile?.linkedin) && (
+              <div className="mt-4 flex flex-wrap gap-3 text-sm">
+                {profile.instagram ? (
+                  <span className="text-slate-600 dark:text-slate-400">
+                    Instagram:{" "}
+                    <span className="font-medium text-[var(--color-text)]">
+                      {profile.instagram}
+                    </span>
+                  </span>
+                ) : null}
+                {profile.linkedin ? (
+                  <span className="text-slate-600 dark:text-slate-400">
+                    LinkedIn:{" "}
+                    <a
+                      href={profile.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Profil
+                    </a>
+                  </span>
+                ) : null}
+              </div>
+            )}
 
             <div className="mt-6 flex flex-wrap gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-xs text-emerald-600">
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-xs text-emerald-600 dark:text-emerald-400">
                 <UserRoundCheck className="size-3.5" /> Telefon
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-3 py-1 text-xs text-blue-600">
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/10 px-3 py-1 text-xs text-slate-600 dark:text-slate-400">
                 <BadgeCheck className="size-3.5" /> E-posta
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/10 px-3 py-1 text-xs text-indigo-600">
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-500/10 px-3 py-1 text-xs text-slate-600 dark:text-slate-400">
                 <ShieldCheck className="size-3.5" /> MVP Üye
               </span>
             </div>
@@ -129,7 +252,7 @@ export function UserProfilePage() {
                     onClick={() => setActiveTab(tabKey)}
                     className={`border-b-[3px] px-1 pb-2.5 text-sm font-semibold ${
                       activeTab === tabKey
-                        ? "border-[#2563EB] text-[#2563EB]"
+                        ? "border-primary text-primary"
                         : "border-transparent text-slate-500"
                     }`}
                   >
@@ -146,14 +269,31 @@ export function UserProfilePage() {
                     <p className="text-sm text-slate-500">Henüz ürün ilanınız yok.</p>
                   )}
                   {profile.listings.map((item) => (
-                    <Link
+                    <div
                       key={item.id}
-                      href={`/ilan/${item.id}`}
-                      className="rounded-xl border border-slate-200 p-4 hover:border-primary dark:border-slate-700"
+                      className="flex flex-col rounded-xl border border-slate-200 p-4 dark:border-slate-700"
                     >
-                      <p className="font-bold">{item.title}</p>
-                      <p className="mt-1 text-sm text-primary">₺{item.daily_price} / gün</p>
-                    </Link>
+                      <Link
+                        href={`/ilan/${item.id}`}
+                        className="min-w-0 flex-1 hover:text-primary"
+                      >
+                        <p className="font-bold text-[var(--color-text)]">{item.title}</p>
+                        <p className="mt-1 text-sm text-primary">
+                          ₺{item.daily_price} / gün
+                        </p>
+                      </Link>
+                      <button
+                        type="button"
+                        disabled={deletingListingId === item.id}
+                        onClick={() =>
+                          handleRequestDeleteListing(item.id, item.title)
+                        }
+                        className="mt-3 inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50"
+                      >
+                        <Trash2 className="size-4 shrink-0" aria-hidden />
+                        {deletingListingId === item.id ? "Siliniyor..." : "İlanı Sil"}
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -180,7 +320,7 @@ export function UserProfilePage() {
               )}
 
               {activeTab === "reviews" && (
-                <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+                <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-600">
                   <Star className="mx-auto mb-2 size-6 text-amber-400" />
                   Değerlendirme sistemi V2 kapsamında eklenecek.
                 </div>
@@ -189,6 +329,32 @@ export function UserProfilePage() {
           </div>
         </section>
       </motion.div>
+
+      <ConfirmDialog
+        open={pendingDeleteListing !== null}
+        title="İlanı sil"
+        message={
+          pendingDeleteListing
+            ? `"${pendingDeleteListing.title}" ilanını kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`
+            : ""
+        }
+        confirmLabel="Evet, sil"
+        cancelLabel="Vazgeç"
+        loading={deletingListingId !== null}
+        onConfirm={() => void handleConfirmDeleteListing()}
+        onCancel={handleCancelDeleteListing}
+      />
+
+      {toast ? (
+        <div
+          className="fixed bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-emerald-200 bg-white px-5 py-3 text-sm font-semibold text-emerald-800 shadow-lg dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200 md:bottom-8"
+          role="status"
+          aria-live="polite"
+        >
+          <CheckCircle2 className="size-5 shrink-0 text-emerald-500" aria-hidden />
+          {toast}
+        </div>
+      ) : null}
     </InteractivePageShell>
   );
 }

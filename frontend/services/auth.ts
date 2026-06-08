@@ -135,3 +135,42 @@ export async function registerWithContactPassword(
   }
   return { ok: false, message: "Beklenmeyen üyelik yanıtı." };
 }
+
+/**
+ * Google id_token (credential) ile giriş veya otomatik üyelik.
+ */
+export async function loginWithGoogle(credential: string): Promise<AuthResult> {
+  const base = resolveBackendRootUrl();
+  let res: Response;
+  try {
+    res = await fetch(`${base}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential }),
+    });
+  } catch {
+    return {
+      ok: false,
+      message: "Sunucuya bağlanılamıyor. Backend'in çalıştığından emin olun.",
+    };
+  }
+
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    return { ok: false, message: `Google giriş yanıtı okunamadı (HTTP ${res.status}).` };
+  }
+
+  if (!res.ok) {
+    return {
+      ok: false,
+      message: extractErrorMessage(body, `Google girişi başarısız (HTTP ${res.status}).`),
+    };
+  }
+
+  if (isAuthSuccessResponse(body)) {
+    return { ok: true, data: body };
+  }
+  return { ok: false, message: "Beklenmeyen Google giriş yanıtı." };
+}

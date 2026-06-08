@@ -2,7 +2,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from models import Listing
 
@@ -36,9 +36,11 @@ def create_listing(
 
 
 def get_listing_by_id(db: Session, listing_id: UUID) -> Listing | None:
-    return (
-        db.execute(select(Listing).where(Listing.id == listing_id)).scalar_one_or_none()
-    )
+    return db.execute(
+        select(Listing)
+        .options(joinedload(Listing.owner))
+        .where(Listing.id == listing_id)
+    ).scalar_one_or_none()
 
 
 def list_listings(
@@ -48,11 +50,15 @@ def list_listings(
     category: str | None = None,
     owner_id: UUID | None = None,
 ) -> list[Listing]:
-    stmt = select(Listing).order_by(Listing.created_at.desc())
+    stmt = (
+        select(Listing)
+        .options(joinedload(Listing.owner))
+        .order_by(Listing.created_at.desc())
+    )
     if owner_id is not None:
         stmt = stmt.where(Listing.owner_id == owner_id)
     if category:
-        stmt = stmt.where(Listing.category.ilike(f"%{category.strip()}%"))
+        stmt = stmt.where(Listing.category == category.strip())
     if q:
         pattern = f"%{q.strip()}%"
         stmt = stmt.where(
@@ -65,3 +71,17 @@ def list_listings(
 
 def list_listings_by_owner(db: Session, owner_id: UUID) -> list[Listing]:
     return list_listings(db, owner_id=owner_id)
+
+
+def delete_listing(db: Session, listing: Listing) -> None:
+    db.delete(listing)
+    db.commit()
+
+
+def list_active_listings_by_owner(db: Session, owner_id: UUID) -> list[Listing]:
+    stmt = (
+        select(Listing)
+        .where(Listing.owner_id == owner_id, Listing.status == "active")
+        .order_by(Listing.created_at.desc())
+    )
+    return list(db.execute(stmt).scalars())

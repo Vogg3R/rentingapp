@@ -2,6 +2,5 @@
 export interface AIGenerateListingResponse {
   title: string;
   description: string;
-  category: string;
   daily_price: number;
 }

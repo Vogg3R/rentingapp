@@ -7,6 +7,8 @@ export interface RentalListing {
   imageUrl: string;
   status: RentalStatus;
   pricePerDay: number;
+  /** Kategori slug — örn. kamp-dis-mekan */
+  category?: string;
   sellerName?: string;
   sellerRating?: number;
   sellerAvatarUrl?: string;

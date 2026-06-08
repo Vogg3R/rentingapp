@@ -13,10 +13,17 @@ import { isLoggedIn } from "@/lib/session";
 import { createItemRequest } from "@/services/requests";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ImagePlus, Search } from "lucide-react";
+import { LEFKOSA_CENTER } from "@/constants/google-maps";
+import type { MapCoordinates } from "@/types/map";
+import { CheckCircle2, ImagePlus, Sparkles, XCircle } from "lucide-react";
 import { InteractivePageShell } from "@/components/layout/InteractivePageShell";
 import { FormSection } from "@/components/listing/FormSection";
+import {
+  CATEGORY_SELECT_PLACEHOLDER,
+  CategorySelect,
+} from "@/components/ui/CategorySelect";
 import { StepperInput } from "@/components/ui/StepperInput";
+import { generateListingWithAI } from "@/services/ai";
 import { RequestListingHeader } from "./RequestListingHeader";
 import { RequestListingPreviewCard } from "./RequestListingPreviewCard";
 
@@ -32,21 +39,6 @@ const MapWidget = dynamic(() => import("@/components/MapWidget"), {
   ),
 });
 
-const REQUEST_CATEGORIES = [
-  "Araç & Ulaşım",
-  "Elektronik & Bilgisayar",
-  "Fotoğraf & Kamera",
-  "Oyun & Konsol",
-  "Kamp & Dış Mekan",
-  "Etkinlik & Organizasyon",
-  "Ev & Alet Edevat",
-  "Spor & Fitness",
-  "Akademik & Proje",
-  "Müzik Enstrümanları",
-  "Giyim & Özel Gün",
-  "Diğer",
-] as const;
-
 const PRODUCT_CONDITIONS = [
   "Yeni",
   "Temiz",
@@ -54,11 +46,13 @@ const PRODUCT_CONDITIONS = [
   "Farketmez",
 ] as const;
 
+type AiToast = { type: "success" | "error"; message: string };
+
 export function RequestListingFormPage() {
   const router = useRouter();
   const representativeInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<string>(REQUEST_CATEGORIES[0]);
+  const [category, setCategory] = useState<string>(CATEGORY_SELECT_PLACEHOLDER);
   const [representativeImageName, setRepresentativeImageName] = useState("");
   const [representativeImagePreviewUrl, setRepresentativeImagePreviewUrl] =
     useState<string | null>(null);
@@ -68,6 +62,16 @@ export function RequestListingFormPage() {
   const [requestDurationCount, setRequestDurationCount] = useState("1");
   const [requestDuration, setRequestDuration] = useState("Günlük");
   const [address, setAddress] = useState("");
+  const [mapPosition, setMapPosition] = useState<MapCoordinates>(LEFKOSA_CENTER);
+  const [rawAiText, setRawAiText] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiToast, setAiToast] = useState<AiToast | null>(null);
+
+  useEffect(() => {
+    if (!aiToast) return;
+    const timer = window.setTimeout(() => setAiToast(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [aiToast]);
 
   const setRepresentativeImageFromFile = useCallback((file: File | null) => {
     setRepresentativeImagePreviewUrl((previousUrl) => {
@@ -99,6 +103,41 @@ export function RequestListingFormPage() {
     window.alert("İstek ilanı taslak olarak kaydedildi (MVP).");
   }, []);
 
+  const generateWithAI = useCallback(async () => {
+    if (!isLoggedIn()) {
+      router.push("/auth");
+      return;
+    }
+    const text = rawAiText.trim();
+    if (text.length < 3) {
+      setAiToast({
+        type: "error",
+        message: "Lütfen en az 3 karakterlik bir metin girin.",
+      });
+      return;
+    }
+
+    setAiLoading(true);
+    setAiToast(null);
+
+    const res = await generateListingWithAI(text);
+
+    setAiLoading(false);
+
+    if (!res.ok) {
+      setAiToast({ type: "error", message: res.message });
+      return;
+    }
+
+    setTitle(res.data.title.slice(0, 70));
+    setDescription(res.data.description);
+    setMaxDailyBudget(String(res.data.daily_price));
+    setAiToast({
+      type: "success",
+      message: "İstek formu yapay zeka ile dolduruldu.",
+    });
+  }, [rawAiText, router]);
+
   const handlePublish = useCallback(async () => {
     if (!isLoggedIn()) {
       router.push("/auth");
@@ -108,6 +147,10 @@ export function RequestListingFormPage() {
     const days = Number(requestDurationCount) || 1;
     if (!title.trim() || description.trim().length < 10 || !address.trim()) {
       window.alert("Başlık, en az 10 karakter açıklama ve adres gerekli.");
+      return;
+    }
+    if (!category.trim()) {
+      window.alert("Lütfen bir kategori seçin.");
       return;
     }
     if (!budget || budget < 0) {
@@ -188,11 +231,52 @@ export function RequestListingFormPage() {
         </p>
 
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:items-start">
-          <form
-            className="min-w-0 space-y-8"
-            onSubmit={(event) => event.preventDefault()}
-            noValidate
-          >
+          <div className="min-w-0 space-y-8">
+            <section className="rounded-2xl border border-violet-200/40 bg-gradient-to-br from-violet-50/80 to-indigo-50/50 p-5 shadow-lg backdrop-blur-md dark:border-violet-500/20 dark:from-violet-950/30 dark:to-indigo-950/20 sm:p-6">
+              <div className="mb-4 flex items-center gap-2">
+                <Sparkles
+                  className="size-5 text-violet-600 dark:text-violet-400"
+                  aria-hidden
+                />
+                <h2 className="text-sm font-bold text-[var(--color-text)]">
+                  AI ile İstek Oluştur
+                </h2>
+              </div>
+              <p className="mb-4 text-sm text-slate-600 dark:text-slate-400">
+                Ne aradığınızı kısaca yazın; yapay zeka başlık, açıklama ve günlük
+                bütçe alanlarını sizin için doldursun. Kategoriyi siz seçersiniz.
+              </p>
+              <label
+                htmlFor="request-ai-raw-text"
+                className="mb-1.5 block text-sm font-bold text-[var(--color-text)]"
+              >
+                Dağınık metin
+              </label>
+              <textarea
+                id="request-ai-raw-text"
+                rows={4}
+                value={rawAiText}
+                onChange={(e) => setRawAiText(e.target.value)}
+                disabled={aiLoading}
+                placeholder="Örn: 3 günlüğüne GoPro Hero 11 kiralamak istiyorum, günlük max 400 TL verebilirim. Dalış için kullanacağım."
+                className={`${inputClass} mb-4 resize-y leading-relaxed disabled:cursor-not-allowed disabled:opacity-60`}
+              />
+              <button
+                type="button"
+                onClick={() => void generateWithAI()}
+                disabled={aiLoading || rawAiText.trim().length < 3}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Sparkles className="size-4" aria-hidden />
+                {aiLoading ? "Yükleniyor..." : "✨ Yapay Zeka ile Doldur"}
+              </button>
+            </section>
+
+            <form
+              className="space-y-8"
+              onSubmit={(event) => event.preventDefault()}
+              noValidate
+            >
             <FormSection step={1} title="Ne Arıyorsunuz?">
               <div>
                 <label
@@ -212,26 +296,15 @@ export function RequestListingFormPage() {
                 />
               </div>
               <div>
-                <label
-                  htmlFor="request-category"
-                  className="mb-1.5 block text-sm font-bold text-[var(--color-text)]"
-                >
-                  Kategori Seçin
-                </label>
-                <select
+                <CategorySelect
                   id="request-category"
                   value={category}
-                  onChange={(event) => setCategory(event.target.value)}
-                  className={`${inputClass} font-medium`}
-                >
-                  {REQUEST_CATEGORIES.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setCategory}
+                  label="Kategori seçin"
+                />
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                  Özel marka ve model belirtmek şansınızı artırır.
+                  Ana sayfadaki kategori filtresiyle eşleşir; doğru kategori seçmek
+                  teklif alma şansınızı artırır.
                 </p>
               </div>
             </FormSection>
@@ -387,31 +460,17 @@ export function RequestListingFormPage() {
             </FormSection>
 
             <FormSection step={5} title="Konum & Teslimat">
-              <div>
-                <label
-                  htmlFor="request-address"
-                  className="mb-1.5 block text-sm font-bold text-[var(--color-text)]"
-                >
-                  Adres Arama
-                </label>
-                <div className="relative">
-                  <Search
-                    className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-                    aria-hidden
-                  />
-                  <input
-                    id="request-address"
-                    type="text"
-                    value={address}
-                    onChange={(event) => setAddress(event.target.value)}
-                    placeholder="Lefkoşa, Gönyeli, Atatürk Cad..."
-                    className={`${inputClass} py-3 pl-10 pr-4`}
-                  />
-                </div>
-              </div>
-              <MapWidget />
+              <MapWidget
+                searchInputId="request-address"
+                searchLabel="Adres arama"
+                address={address}
+                onAddressChange={setAddress}
+                position={mapPosition}
+                onPositionChange={setMapPosition}
+              />
             </FormSection>
-          </form>
+            </form>
+          </div>
 
           <aside className="min-w-0 lg:sticky lg:top-28">
             <p className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
@@ -427,6 +486,25 @@ export function RequestListingFormPage() {
             />
           </aside>
         </div>
+
+        {aiToast ? (
+          <div
+            className={`fixed bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold shadow-lg md:bottom-8 ${
+              aiToast.type === "success"
+                ? "border-emerald-200 bg-white text-emerald-800 dark:border-emerald-800 dark:bg-slate-900 dark:text-emerald-200"
+                : "border-red-200 bg-white text-red-800 dark:border-red-800 dark:bg-slate-900 dark:text-red-200"
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            {aiToast.type === "success" ? (
+              <CheckCircle2 className="size-5 shrink-0 text-emerald-500" aria-hidden />
+            ) : (
+              <XCircle className="size-5 shrink-0 text-red-500" aria-hidden />
+            )}
+            {aiToast.message}
+          </div>
+        ) : null}
       </motion.div>
     </InteractivePageShell>
   );

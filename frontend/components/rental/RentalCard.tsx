@@ -8,6 +8,13 @@ const statusLabel: Record<RentalStatus, string> = {
   rented: "Kiralandı",
 };
 
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+}
+
 function formatTry(amount: number): string {
   return new Intl.NumberFormat("tr-TR", {
     style: "currency",
@@ -61,16 +68,29 @@ export function RentalCard({ listing }: RentalCardProps) {
         </div>
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <div className="relative size-7 overflow-hidden rounded-full border border-slate-300/80 bg-slate-200 dark:border-slate-600 dark:bg-slate-700">
+            <div className="relative size-7 shrink-0 overflow-hidden rounded-full border border-slate-300/80 bg-slate-200 dark:border-slate-600 dark:bg-slate-700">
               {sellerAvatarUrl ? (
-                <Image
-                  src={sellerAvatarUrl}
-                  alt={`${sellerDisplayName} profil fotoğrafı`}
-                  fill
-                  className="object-cover"
-                  sizes="28px"
-                />
-              ) : null}
+                sellerAvatarUrl.startsWith("data:") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={sellerAvatarUrl}
+                    alt={`${sellerDisplayName} profil fotoğrafı`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <Image
+                    src={sellerAvatarUrl}
+                    alt={`${sellerDisplayName} profil fotoğrafı`}
+                    fill
+                    className="object-cover"
+                    sizes="28px"
+                  />
+                )
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-slate-200 text-[10px] font-bold text-slate-600 dark:bg-slate-700 dark:text-slate-200">
+                  {initialsFromName(sellerDisplayName)}
+                </div>
+              )}
             </div>
             <span className="text-sm text-slate-500 dark:text-slate-300">
               {sellerDisplayName}

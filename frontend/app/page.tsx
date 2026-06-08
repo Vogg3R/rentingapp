@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { useCategoryFilter } from "@/components/providers/CategoryFilterContext";
 import {
   InteractivePageShell,
   ParallaxBand,
@@ -9,49 +10,43 @@ import {
 import { ListingSkeleton } from "@/components/listing/ListingSkeleton";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { RentalCard } from "@/components/rental/RentalCard";
-import { resolveListingsForDisplay } from "@/lib/listings";
+import { getCategoryLabel } from "@/lib/categories";
+import {
+  filterListingsByCategory,
+  resolveListingsForDisplay,
+} from "@/lib/listings";
 import { fetchRootApi } from "@/services/api";
 import type { ApiRootResponse } from "@/types/api";
 import { motion } from "framer-motion";
 import { Box, Search } from "lucide-react";
 import Link from "next/link";
 
-const REQUEST_DEMOS = [
-  { id: "req-1", title: "GoPro Hero 11", budget: 200, days: 3, location: "Lefkoşa" },
-  { id: "req-2", title: "Akülü Matkap", budget: 180, days: 2, location: "Girne" },
-  { id: "req-3", title: "PS5 + 2 Kol", budget: 500, days: 7, location: "Güzelyurt" },
-  { id: "req-4", title: "Kamp Çadırı (4 Kişilik)", budget: 160, days: 5, location: "Mağusa" },
-] as const;
-
 const INITIAL_DATA: ApiRootResponse = {
   mesaj: "İlanlar yükleniyor...",
 };
 
 export default function Home() {
+  const { selectedCategorySlug, selectedCategoryLabel } = useCategoryFilter();
   const [data, setData] = useState<ApiRootResponse>(INITIAL_DATA);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     fetchRootApi().then((result) => {
       if (!isMounted) return;
       setData(result);
+      setIsLoading(false);
     });
     return () => {
       isMounted = false;
     };
   }, []);
 
-  const listings = resolveListingsForDisplay(data);
-  const itemRequests =
-    data.itemRequests && data.itemRequests.length > 0
-      ? data.itemRequests
-      : REQUEST_DEMOS.map((d) => ({
-          id: d.id,
-          title: d.title,
-          maxDailyBudget: d.budget,
-          durationDays: d.days,
-          location: d.location,
-        }));
+  const listings = useMemo(() => {
+    const all = resolveListingsForDisplay(data);
+    return filterListingsByCategory(all, selectedCategorySlug);
+  }, [data, selectedCategorySlug]);
+  const itemRequests = data.itemRequests ?? [];
 
   return (
     <>
@@ -64,16 +59,12 @@ export default function Home() {
                 Öne çıkan ilanlar
               </h1>
               <p className="mt-1 text-sm font-normal text-slate-600 dark:text-slate-300">
-                Müsait ekipmanları keşfedin veya yakında tekrar deneyin.
+                {selectedCategoryLabel
+                  ? `${selectedCategoryLabel} kategorisindeki ilanlar gösteriliyor.`
+                  : "Müsait ekipmanları keşfedin veya yakında tekrar deneyin."}
               </p>
             </div>
             <div className="hidden items-center gap-2 sm:flex">
-              <Link
-                href="/istek-ilani"
-                className="inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-primary/90"
-              >
-                Kiralamak İstediğiniz Ürün İçin İlan Açın
-              </Link>
               <button
                 type="button"
                 className="inline-flex rounded-lg border border-secondary px-4 py-2 text-sm font-bold text-secondary shadow-sm transition-colors hover:bg-secondary/10"
@@ -87,7 +78,36 @@ export default function Home() {
             band="listings"
             className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
           >
-            {listings.map((listing, index) => (
+            {isLoading ? (
+              <>
+                <ListingSkeleton />
+                <ListingSkeleton />
+                <ListingSkeleton />
+                <ListingSkeleton />
+              </>
+            ) : null}
+            {!isLoading && listings.length === 0 ? (
+              <div className="col-span-full rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center dark:border-slate-600 dark:bg-[var(--color-card)]">
+                <p className="text-sm font-semibold text-[var(--color-text)]">
+                  {selectedCategorySlug
+                    ? `${getCategoryLabel(selectedCategorySlug)} kategorisinde henüz ilan yok.`
+                    : "Henüz yayınlanmış ilan yok."}
+                </p>
+                <p className="mt-2 text-sm text-slate-500">
+                  {selectedCategorySlug
+                    ? "Başka bir kategori seçin veya yeni ilan oluşturun."
+                    : "İlk ilanı siz oluşturarak platformu başlatabilirsiniz."}
+                </p>
+                <Link
+                  href="/ilan-ver"
+                  className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-primary/90"
+                >
+                  Kiraya Ver
+                </Link>
+              </div>
+            ) : null}
+            {!isLoading
+              ? listings.map((listing, index) => (
               <motion.div
                 key={listing.id}
                 initial={{ opacity: 0, y: 40 }}
@@ -101,24 +121,47 @@ export default function Home() {
               >
                 <RentalCard listing={listing} />
               </motion.div>
-            ))}
-            <ListingSkeleton />
-            <ListingSkeleton />
-            <ListingSkeleton />
+            ))
+              : null}
           </ParallaxBand>
 
           <section className="mt-12">
-            <div className="mb-6 border-b border-slate-200/80 pb-4 dark:border-slate-700/80">
-              <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-[var(--color-text)] md:text-3xl">
-                Topluluğun Aradıkları (İstek İlanları)
-              </h2>
-              <p className="mt-1 text-sm font-normal text-slate-600 dark:text-slate-300">
-                Elindeki eşyaları kiraya vererek bu talepleri hemen karşıla ve kazanmaya başla.
-              </p>
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-slate-200/80 pb-4 dark:border-slate-700/80">
+              <div>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-[var(--color-text)] md:text-3xl">
+                  Topluluğun Aradıkları (İstek İlanları)
+                </h2>
+                <p className="mt-1 text-sm font-normal text-slate-600 dark:text-slate-300">
+                  Elindeki eşyaları kiraya vererek bu talepleri hemen karşıla ve kazanmaya başla.
+                </p>
+              </div>
+              <Link
+                href="/istek-ilani"
+                className="inline-flex shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-primary/90"
+              >
+                Kiralamak İstediğiniz Ürün İçin İlan Açın
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {itemRequests.map((requestItem, index) => (
+              {!isLoading && itemRequests.length === 0 ? (
+                <div className="col-span-full rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center dark:border-slate-600 dark:bg-[var(--color-card)]">
+                  <p className="text-sm font-semibold text-[var(--color-text)]">
+                    Henüz istek ilanı yok.
+                  </p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Aradığınız ürün için ilan açın; topluluk size teklif versin.
+                  </p>
+                  <Link
+                    href="/istek-ilani"
+                    className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-primary/90"
+                  >
+                    İstek İlanı Aç
+                  </Link>
+                </div>
+              ) : null}
+              {!isLoading
+                ? itemRequests.map((requestItem, index) => (
                 <motion.div
                   key={requestItem.id}
                   initial={{ opacity: 0, y: 40 }}
@@ -167,7 +210,8 @@ export default function Home() {
                     </div>
                   </article>
                 </motion.div>
-              ))}
+              ))
+                : null}
             </div>
           </section>
         </div>

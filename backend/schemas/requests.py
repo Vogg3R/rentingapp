@@ -14,6 +14,14 @@ class ItemRequestCreate(BaseModel):
     location: str = Field(min_length=2, max_length=255)
 
 
+class RequesterPreview(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str | None = None
+    avatar_base64: str | None = None
+
+
 class ItemRequestRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -27,3 +35,4 @@ class ItemRequestRead(BaseModel):
     location: str
     status: str
     created_at: datetime
+    requester: RequesterPreview | None = None

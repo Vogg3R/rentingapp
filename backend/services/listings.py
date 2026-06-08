@@ -44,3 +44,13 @@ def list_listings(
     category: str | None = None,
 ) -> list[Listing]:
     return listings_crud.list_listings(db, q=q, category=category)
+
+
+def delete_listing(db: Session, listing_id: UUID, current_user: User) -> None:
+    """Yalnızca ilan sahibi kendi ilanını silebilir."""
+    listing = listings_crud.get_listing_by_id(db, listing_id)
+    if listing is None:
+        raise HTTPException(status_code=404, detail="İlan bulunamadı.")
+    if listing.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Bu ilanı silme yetkiniz yok.")
+    listings_crud.delete_listing(db, listing)

@@ -39,6 +39,15 @@ export async function getListing(id: string): Promise<ApiResult<Listing>> {
   }
 }
 
+export async function deleteListing(id: string): Promise<ApiResult<{ message: string }>> {
+  try {
+    const res = await authorizedFetch(`/listings/${id}`, { method: "DELETE" });
+    return parseJson(res, "İlan silinemedi.");
+  } catch {
+    return { ok: false, message: "Sunucuya bağlanılamıyor." };
+  }
+}
+
 export async function searchListings(
   q?: string,
   category?: string

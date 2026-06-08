@@ -5,6 +5,16 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class ListingOwnerPreview(BaseModel):
+    """İlan detayında gösterilen sahip özeti (gizli bilgi yok)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str | None = None
+    avatar_base64: str | None = None
+
+
 class ListingCreate(BaseModel):
     title: str = Field(min_length=3, max_length=140)
     description: str = Field(min_length=10, max_length=3000)
@@ -29,3 +39,4 @@ class ListingRead(BaseModel):
     location: str
     status: str
     created_at: datetime
+    owner: ListingOwnerPreview | None = None

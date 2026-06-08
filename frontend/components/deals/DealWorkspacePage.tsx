@@ -3,6 +3,8 @@
 import { AppHeader } from "@/components/layout/AppHeader";
 import { InteractivePageShell } from "@/components/layout/InteractivePageShell";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { AppToast, type AppToastType } from "@/components/ui/AppToast";
+import { PromptDialog } from "@/components/ui/PromptDialog";
 import { getAuthUser, isLoggedIn } from "@/lib/session";
 import {
   confirmDelivery,
@@ -25,7 +27,15 @@ export function DealWorkspacePage({ dealId }: DealWorkspacePageProps) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [disputeOpen, setDisputeOpen] = useState(false);
+  const [toast, setToast] = useState<{ type: AppToastType; message: string } | null>(
+    null
+  );
   const user = getAuthUser();
+
+  const showToast = useCallback((message: string, type: AppToastType = "success") => {
+    setToast({ message, type });
+  }, []);
 
   const reload = useCallback(async () => {
     const res = await listDealMessages(dealId);
@@ -34,6 +44,7 @@ export function DealWorkspacePage({ dealId }: DealWorkspacePageProps) {
       return;
     }
     setMessages(res.data);
+    setError(null);
   }, [dealId]);
 
   useEffect(() => {
@@ -52,13 +63,19 @@ export function DealWorkspacePage({ dealId }: DealWorkspacePageProps) {
     };
   }, [dealId, router]);
 
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
   async function handleSend() {
     if (text.trim().length < 1) return;
     setBusy(true);
     const res = await sendDealMessage(dealId, text.trim());
     setBusy(false);
     if (!res.ok) {
-      setError(res.message);
+      showToast(res.message, "error");
       return;
     }
     setText("");
@@ -70,11 +87,23 @@ export function DealWorkspacePage({ dealId }: DealWorkspacePageProps) {
     const res = await confirmDelivery(dealId);
     setBusy(false);
     if (!res.ok) {
-      setError(res.message);
+      showToast(res.message, "error");
       return;
     }
-    setError(null);
-    alert("Teslim onaylandı; escrow tedarikçiye aktarıldı.");
+    showToast("Teslim onaylandı.");
+    await reload();
+  }
+
+  async function handleSubmitDispute(reason: string) {
+    setBusy(true);
+    const res = await openDispute(dealId, reason);
+    setBusy(false);
+    if (!res.ok) {
+      showToast(res.message, "error");
+      return;
+    }
+    setDisputeOpen(false);
+    showToast("Anlaşmazlık kaydı açıldı. Admin iade işlemi yapabilir.");
     await reload();
   }
 
@@ -89,7 +118,7 @@ export function DealWorkspacePage({ dealId }: DealWorkspacePageProps) {
           <h1 className="mt-4 text-2xl font-bold">Kiralama işlemi</h1>
 
           {error && (
-            <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
               {error}
             </p>
           )}
@@ -102,7 +131,9 @@ export function DealWorkspacePage({ dealId }: DealWorkspacePageProps) {
               <li
                 key={m.id}
                 className={`text-sm ${
-                  m.sender_id === user?.id ? "text-right text-primary" : "text-slate-700 dark:text-slate-200"
+                  m.sender_id === user?.id
+                    ? "text-right text-primary"
+                    : "text-slate-700 dark:text-slate-200"
                 }`}
               >
                 {m.body}
@@ -139,18 +170,8 @@ export function DealWorkspacePage({ dealId }: DealWorkspacePageProps) {
             <button
               type="button"
               disabled={busy}
-              onClick={() => {
-                const reason = window.prompt("Anlaşmazlık nedeni (min 5 karakter):");
-                if (!reason || reason.trim().length < 5) return;
-                void (async () => {
-                  setBusy(true);
-                  const res = await openDispute(dealId, reason.trim());
-                  setBusy(false);
-                  if (!res.ok) setError(res.message);
-                  else alert("Anlaşmazlık kaydı açıldı. Admin iade işlemi yapabilir.");
-                })();
-              }}
-              className="w-full rounded-lg border border-amber-500 py-2 text-sm font-bold text-amber-700 disabled:opacity-60"
+              onClick={() => setDisputeOpen(true)}
+              className="w-full rounded-lg border border-amber-500 py-2 text-sm font-bold text-amber-700 disabled:opacity-60 dark:text-amber-400"
             >
               Anlaşmazlık bildir
             </button>
@@ -158,6 +179,24 @@ export function DealWorkspacePage({ dealId }: DealWorkspacePageProps) {
         </div>
       </InteractivePageShell>
       <SiteFooter className="pb-28 md:pb-6" />
+
+      <PromptDialog
+        open={disputeOpen}
+        title="Anlaşmazlık bildir"
+        message="Sorunu kısaca açıklayın. Kayıt incelendikten sonra gerekirse iade işlemi yapılabilir."
+        label="Anlaşmazlık nedeni"
+        placeholder="Örn: Ürün anlaşıldığı gibi değildi..."
+        minLength={5}
+        confirmLabel="Bildir"
+        cancelLabel="Vazgeç"
+        loading={busy}
+        onConfirm={(reason) => void handleSubmitDispute(reason)}
+        onCancel={() => {
+          if (!busy) setDisputeOpen(false);
+        }}
+      />
+
+      {toast ? <AppToast message={toast.message} type={toast.type} /> : null}
     </>
   );
 }

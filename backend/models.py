@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, func
+from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,6 +20,13 @@ class User(Base):
     email: Mapped[str | None] = mapped_column(String(320), unique=True, nullable=True)
     phone: Mapped[str | None] = mapped_column(String(32), unique=True, nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    bio: Mapped[str | None] = mapped_column(Text, nullable=True)
+    instagram: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    linkedin: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    avatar_base64: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cover_base64: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -143,6 +150,90 @@ class Listing(Base):
     )
 
     owner: Mapped[User] = relationship(back_populates="listings", foreign_keys=[owner_id])
+    rental_requests: Mapped[list[ListingRentalRequest]] = relationship(
+        back_populates="listing", cascade="all, delete-orphan"
+    )
+
+
+class ListingRentalRequest(Base):
+    """Doğrudan ilan üzerinden gönderilen kiralama talebi."""
+
+    __tablename__ = "listing_rental_requests"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    listing_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("listings.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    renter_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    start_date: Mapped[date] = mapped_column(Date, nullable=False)
+    end_date: Mapped[date] = mapped_column(Date, nullable=False)
+    total_days: Mapped[int] = mapped_column(nullable=False)
+    total_price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="pending"
+    )  # pending|accepted|rejected|cancelled
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    listing: Mapped[Listing] = relationship(back_populates="rental_requests")
+    renter: Mapped[User] = relationship(foreign_keys=[renter_id])
+    conversation: Mapped[ListingConversation | None] = relationship(
+        back_populates="rental_request", uselist=False, cascade="all, delete-orphan"
+    )
+
+
+class ListingConversation(Base):
+    __tablename__ = "listing_conversations"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    rental_request_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("listing_rental_requests.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    rental_request: Mapped[ListingRentalRequest] = relationship(
+        back_populates="conversation"
+    )
+    messages: Mapped[list[ListingMessage]] = relationship(
+        back_populates="conversation", cascade="all, delete-orphan"
+    )
+
+
+class ListingMessage(Base):
+    __tablename__ = "listing_messages"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("listing_conversations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    sender_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    conversation: Mapped[ListingConversation] = relationship(back_populates="messages")
+    sender: Mapped[User] = relationship(foreign_keys=[sender_id])
 
 
 class Offer(Base):

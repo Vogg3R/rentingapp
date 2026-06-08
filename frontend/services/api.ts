@@ -2,20 +2,22 @@ import type { ApiRootResponse } from "@/types/api";
 
 /** Windows/Node bazen `localhost` → IPv6 seçer ve `fetch` düşebilir; 127.0.0.1 daha güvenilir. */
 export function resolveBackendRootUrl(): string {
-  const fromEnv = process.env.BACKEND_URL?.trim();
+  const fromEnv =
+    process.env.NEXT_PUBLIC_BACKEND_URL?.trim() ||
+    process.env.BACKEND_URL?.trim();
   if (fromEnv) return fromEnv.replace(/\/+$/, "");
   return "http://127.0.0.1:8000";
 }
 
 function degradedResponse(hint: string): ApiRootResponse {
   return {
-    mesaj: `API'ye bağlanılamıyor. ${hint} Örnek: backend klasöründe \`uvicorn main:app --reload --host 127.0.0.1 --port 8000\`. Şimdilik örnek ilanlar gösteriliyor.`,
+    mesaj: `API'ye bağlanılamıyor. ${hint} Örnek: backend klasöründe \`uvicorn main:app --reload --host 127.0.0.1 --port 8000\`.`,
   };
 }
 
 /**
  * FastAPI kök endpoint'inden veriyi çeker (sunucu bileşenlerinden çağrılır).
- * Ağ bağlantısı yoksa veya beklenmeyen yanıt varsa tam sayfa yerine uyarılı `mesaj` döner; grid demo veriyi kullanır.
+ * Ağ bağlantısı yoksa veya beklenmeyen yanıt varsa tam sayfa yerine uyarılı `mesaj` döner.
  */
 export async function fetchRootApi(): Promise<ApiRootResponse> {
   const rootUrl = resolveBackendRootUrl();

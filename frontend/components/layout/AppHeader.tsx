@@ -1,30 +1,21 @@
 "use client";
 
 import { EldenEleLogoLink } from "@/components/branding/EldenEleLogoLink";
+import { useCategoryFilter } from "@/components/providers/CategoryFilterContext";
 import { useSearchModal } from "@/components/providers/SearchModalContext";
+import { CATEGORY_LABELS } from "@/lib/categories";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { clearAuthSession, isLoggedIn as checkLoggedIn } from "@/lib/session";
+import { fetchMyProfile } from "@/services/profile";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { MessageSquare } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface AppHeaderProps {
   apiMessage?: string;
   showCategoryBar?: boolean;
 }
-
-const CATEGORY_ITEMS = [
-  "Araç & Ulaşım",
-  "Elektronik & Bilgisayar",
-  "Fotoğraf & Kamera",
-  "Oyun & Konsol",
-  "Kamp & Dış Mekan",
-  "Etkinlik & Organizasyon",
-  "Ev & Alet Edevat",
-  "Spor & Fitness",
-  "Akademik & Proje",
-  "Müzik Enstrümanları",
-  "Giyim & Özel Gün",
-  "Diğer",
-] as const;
 
 const LOCATION_OPTIONS = ["Lefkoşa", "Girne", "Mağusa"] as const;
 
@@ -40,13 +31,17 @@ export function AppHeader({
   apiMessage,
   showCategoryBar = true,
 }: AppHeaderProps) {
+  const pathname = usePathname();
+  const router = useRouter();
   const { setIsSearchOpen } = useSearchModal();
+  const { selectedCategoryLabel, toggleCategoryByLabel } = useCategoryFilter();
+  const isMessagesActive = pathname?.startsWith("/mesajlar") ?? false;
   const [isVisible, setIsVisible] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("");
   const [locationLabel, setLocationLabel] = useState(formatCityLabel("Lefkoşa"));
   const [canScrollCategoriesLeft, setCanScrollCategoriesLeft] = useState(false);
   const [canScrollCategoriesRight, setCanScrollCategoriesRight] = useState(false);
@@ -55,6 +50,33 @@ export function AppHeader({
   const categoryWrapRef = useRef<HTMLDivElement>(null);
   const profileWrapRef = useRef<HTMLDivElement>(null);
   const categoryScrollRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const loggedIn = checkLoggedIn();
+    setIsLoggedIn(loggedIn);
+    if (!loggedIn) {
+      setProfileAvatarUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+    void fetchMyProfile().then((res) => {
+      if (cancelled) return;
+      setProfileAvatarUrl(res.ok ? res.data.avatar_base64 : null);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname]);
+
+  const handleLogout = useCallback(() => {
+    clearAuthSession();
+    setIsLoggedIn(false);
+    setProfileAvatarUrl(null);
+    setIsProfileMenuOpen(false);
+    router.push("/");
+  }, [router]);
 
   useEffect(() => {
     let previousScrollY = window.scrollY;
@@ -160,12 +182,12 @@ export function AppHeader({
   }
 
   function handlePickCategoryFromMenu(label: string) {
-    setActiveTab((current) => (current === label ? "" : label));
+    toggleCategoryByLabel(label);
     setIsCategoryOpen(false);
   }
 
   function handleHorizontalCategoryClick(label: string) {
-    setActiveTab((current) => (current === label ? "" : label));
+    toggleCategoryByLabel(label);
   }
 
   function scrollCategoriesBy(direction: "left" | "right") {
@@ -287,6 +309,18 @@ export function AppHeader({
               />
               Kiraya Ver
             </Link>
+            <Link
+              href="/mesajlar"
+              className={`inline-flex size-10 shrink-0 items-center justify-center rounded-full border shadow-sm transition-colors active:scale-95 ${
+                isMessagesActive
+                  ? "border-primary/30 bg-primary/10 text-primary dark:border-primary/40 dark:bg-primary/15"
+                  : "border-slate-200/90 bg-[var(--color-app-bg)] text-[var(--color-text)] hover:bg-slate-200/35 dark:border-slate-600 dark:hover:bg-slate-700/50"
+              }`}
+              aria-label="Mesajlar"
+              aria-current={isMessagesActive ? "page" : undefined}
+            >
+              <MessageSquare className="size-[1.125rem]" strokeWidth={1.8} aria-hidden />
+            </Link>
             <ThemeToggle />
             {!isLoggedIn ? (
               <Link
@@ -296,38 +330,46 @@ export function AppHeader({
                 Giriş Yap
               </Link>
             ) : (
-              <div ref={profileWrapRef} className="relative">
+              <div
+                ref={profileWrapRef}
+                className="relative inline-flex shrink-0 items-center self-center"
+              >
                 <button
                   type="button"
                   onClick={toggleProfileMenu}
-                  className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-slate-200/90 bg-[var(--color-app-bg)] text-[var(--color-text)] shadow-sm transition-colors hover:bg-slate-200/35 active:scale-95 dark:border-slate-600 dark:hover:bg-slate-700/50"
+                  className="inline-flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200/90 bg-[var(--color-app-bg)] p-0 text-[var(--color-text)] shadow-sm transition-colors hover:bg-slate-200/35 active:scale-95 dark:border-slate-600 dark:hover:bg-slate-700/50"
                   aria-haspopup="menu"
                   aria-expanded={isProfileMenuOpen}
                   aria-label="Profil menüsü"
                 >
-                  <UserGlyph className="size-[1.125rem]" />
+                  {profileAvatarUrl ? (
+                    <img
+                      src={profileAvatarUrl}
+                      alt=""
+                      className="block size-full object-cover"
+                    />
+                  ) : (
+                    <UserGlyph className="size-[1.125rem]" />
+                  )}
                 </button>
                 {isProfileMenuOpen ? (
                   <div
-                    className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-700 bg-slate-800 shadow-xl"
+                    className="absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-slate-200 bg-[var(--color-card)] py-1 shadow-lg dark:border-slate-600"
                     role="menu"
                     aria-label="Profil menüsü"
                   >
                     <Link
                       href="/profil"
                       onClick={() => setIsProfileMenuOpen(false)}
-                      className="block px-4 py-2.5 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-700"
+                      className="block px-4 py-2.5 text-sm font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--color-app-bg)] hover:text-primary dark:hover:bg-slate-800/80"
                       role="menuitem"
                     >
                       Profilim
                     </Link>
                     <button
                       type="button"
-                      onClick={() => {
-                        setIsLoggedIn(false);
-                        setIsProfileMenuOpen(false);
-                      }}
-                      className="block w-full px-4 py-2.5 text-left text-sm font-medium text-slate-100 transition-colors hover:bg-slate-700"
+                      onClick={handleLogout}
+                      className="block w-full px-4 py-2.5 text-left text-sm font-medium text-[var(--color-text)] transition-colors hover:bg-[var(--color-app-bg)] hover:text-red-600 dark:hover:bg-slate-800/80 dark:hover:text-red-400"
                       role="menuitem"
                     >
                       Çıkış Yap
@@ -367,13 +409,13 @@ export function AppHeader({
                 role="presentation"
               >
                 <ul role="listbox" aria-label="Tüm kategoriler menüsü">
-                  {CATEGORY_ITEMS.map((label) => (
+                  {CATEGORY_LABELS.map((label) => (
                     <li key={label} role="option">
                       <button
                         type="button"
                         onClick={() => handlePickCategoryFromMenu(label)}
                         className={`flex w-full px-4 py-2.5 text-left text-sm hover:bg-[var(--color-app-bg)] hover:text-primary dark:hover:bg-slate-800/80 ${
-                          activeTab === label
+                          selectedCategoryLabel === label
                             ? "font-semibold text-primary"
                             : "font-normal text-gray-600 dark:text-slate-400"
                         }`}
@@ -416,13 +458,13 @@ export function AppHeader({
               className={`min-w-0 overflow-x-auto pb-px ${hideScrollbarClasses}`}
             >
               <ul className="flex min-h-10 gap-2 pr-1">
-                {CATEGORY_ITEMS.map((label) => (
+                {CATEGORY_LABELS.map((label) => (
                   <li key={label} className="shrink-0">
                     <button
                       type="button"
                       onClick={() => handleHorizontalCategoryClick(label)}
                       className={`inline-flex whitespace-nowrap rounded-full border px-3 py-2 text-sm outline-none ring-primary/30 transition-colors focus-visible:ring-2 ${
-                        activeTab === label
+                        selectedCategoryLabel === label
                           ? "border-primary/30 bg-primary/5 font-semibold text-primary"
                           : "border-transparent bg-transparent font-normal text-gray-600 hover:border-slate-200 hover:bg-[var(--color-app-bg)] hover:text-gray-900 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/60 dark:hover:text-slate-100"
                       }`}
