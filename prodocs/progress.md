@@ -867,7 +867,7 @@ Bu oturumda ilan kiralama taleplerine ilan sahibi tarafından **Kabul Et / Redde
 | Profil düzenleme tema uyumu | **Tamamlandı** |
 | Cüzdan Iyzico UI kaldırma | **Tamamlandı** |
 | Ana sayfa API banner kaldırma | **Tamamlandı** |
-| Git commit (§20) | **Bekliyor** — yerel değişiklikler |
+| Git commit (§20) | **Tamamlandı** — `49d7c22` GitHub'a push |
 
 ---
 
