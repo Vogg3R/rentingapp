@@ -18,7 +18,6 @@ Talep odaklı kiralama: kullanıcılar ihtiyaç duydukları ürünler için **is
 | Kategori filtresi (header + ana sayfa)                  | Çalışır                              |
 | Profil düzenleme, herkese açık profil                   | Çalışır                              |
 | Google Maps konum seçici (ilan / istek formları)        | Çalışır                              |
-| Iyzico                                                  | Sandbox iskelet; üretim SDK bekliyor |
 
 
 Ana sayfa yalnızca API’den gelen gerçek ilanları gösterir (demo/mock veri yok).
