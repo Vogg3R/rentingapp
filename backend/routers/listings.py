@@ -77,6 +77,36 @@ def send_listing_rental_message(
     return listing_rentals_service.send_message(db, request_id, current_user, body)
 
 
+@router.post(
+    "/rental-requests/{request_id}/accept",
+    response_model=ListingRentalConversationSummary,
+)
+def accept_listing_rental_request(
+    request_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ListingRentalConversationSummary:
+    """İlan sahibi gelen kiralama talebini kabul eder."""
+    return listing_rentals_service.respond_to_rental_request(
+        db, request_id, current_user, accept=True
+    )
+
+
+@router.post(
+    "/rental-requests/{request_id}/reject",
+    response_model=ListingRentalConversationSummary,
+)
+def reject_listing_rental_request(
+    request_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ListingRentalConversationSummary:
+    """İlan sahibi gelen kiralama talebini reddeder."""
+    return listing_rentals_service.respond_to_rental_request(
+        db, request_id, current_user, accept=False
+    )
+
+
 @router.get("/{listing_id}", response_model=ListingRead)
 def get_listing(listing_id: UUID, db: Session = Depends(get_db)) -> ListingRead:
     return listings_service.get_listing(db, listing_id)

@@ -122,6 +122,28 @@ def get_rental_request(db: Session, request_id: UUID, user: User) -> ListingRent
     return request
 
 
+def respond_to_rental_request(
+    db: Session, request_id: UUID, user: User, *, accept: bool
+) -> ListingRentalConversationSummary:
+    """İlan sahibinin gelen kiralama talebini kabul veya reddetmesi."""
+    request = get_rental_request(db, request_id, user)
+
+    # Yalnızca ilanın sahibi talebi kabul/ret edebilir.
+    if request.listing.owner_id != user.id:
+        raise HTTPException(
+            status_code=403, detail="Yalnızca ilan sahibi talebi yanıtlayabilir."
+        )
+    # Yalnızca beklemede olan talepler yanıtlanabilir.
+    if request.status != "pending":
+        raise HTTPException(
+            status_code=400, detail="Bu talep zaten yanıtlanmış."
+        )
+
+    new_status = "accepted" if accept else "rejected"
+    rental_crud.update_request_status(db, request, new_status)
+    return _to_conversation_summary(db, request, user.id)
+
+
 def _to_message_read(message: ListingMessage) -> ListingMessageRead:
     sender_name = message.sender.name.strip() if message.sender and message.sender.name else None
     return ListingMessageRead(

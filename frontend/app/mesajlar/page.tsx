@@ -13,8 +13,27 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-function roleLabel(role: ListingRentalConversationSummary["role"]): string {
-  return role === "owner" ? "İlan sahibi" : "Kiracı";
+// `role` giriş yapan kullanıcının kendi rolüdür; kartta gösterilen isim ise
+// karşı tarafa aittir. Bu yüzden karşı tarafın rolünü (rolün tersini) yazdırırız:
+// kullanıcı ilan sahibiyse karşı taraf kiracı, kiracıysa karşı taraf ilan sahibidir.
+function counterpartyRoleLabel(role: ListingRentalConversationSummary["role"]): string {
+  return role === "owner" ? "Kiracı" : "İlan sahibi";
+}
+
+// Talep durumunu kullanıcı dostu Türkçe metne çevirir.
+function statusLabel(status: string): string {
+  switch (status) {
+    case "pending":
+      return "Beklemede";
+    case "accepted":
+      return "Kabul edildi";
+    case "rejected":
+      return "Reddedildi";
+    case "cancelled":
+      return "İptal edildi";
+    default:
+      return status;
+  }
 }
 
 export default function MesajlarPage() {
@@ -84,7 +103,7 @@ export default function MesajlarPage() {
                             {chat.listing_title}
                           </p>
                           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                            {chat.counterparty_name?.trim() || "Kullanıcı"} · {roleLabel(chat.role)}
+                            {chat.counterparty_name?.trim() || "Kullanıcı"} · {counterpartyRoleLabel(chat.role)}
                           </p>
                           {chat.last_message ? (
                             <p className="mt-2 truncate text-sm text-slate-500 dark:text-slate-400">
@@ -97,7 +116,7 @@ export default function MesajlarPage() {
                           )}
                           <p className="mt-2 text-xs text-slate-500">
                             {chat.total_days} gün · ₺{chat.total_price} ·{" "}
-                            {chat.status === "pending" ? "Beklemede" : chat.status}
+                            {statusLabel(chat.status)}
                           </p>
                         </div>
                       </div>

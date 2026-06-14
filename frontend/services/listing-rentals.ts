@@ -75,6 +75,24 @@ export async function getListingRentalConversation(
   }
 }
 
+export async function respondToListingRentalRequest(
+  requestId: string,
+  action: "accept" | "reject"
+): Promise<ApiResult<ListingRentalConversationSummary>> {
+  try {
+    const res = await authorizedFetch(
+      `/listings/rental-requests/${requestId}/${action}`,
+      { method: "POST" }
+    );
+    return parseJson(
+      res,
+      action === "accept" ? "Talep kabul edilemedi." : "Talep reddedilemedi."
+    );
+  } catch {
+    return { ok: false, message: "Sunucuya bağlanılamıyor." };
+  }
+}
+
 export async function listListingRentalMessages(
   requestId: string
 ): Promise<ApiResult<ListingRentalMessage[]>> {

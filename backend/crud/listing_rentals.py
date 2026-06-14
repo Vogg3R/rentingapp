@@ -83,6 +83,16 @@ def list_requests_for_user(db: Session, user_id: UUID) -> list[ListingRentalRequ
     )
 
 
+def update_request_status(
+    db: Session, request: ListingRentalRequest, status: str
+) -> ListingRentalRequest:
+    """Kiralama talebinin durumunu günceller (accepted / rejected vb.)."""
+    request.status = status
+    db.commit()
+    db.refresh(request)
+    return request
+
+
 def get_last_message(db: Session, conversation_id: UUID) -> ListingMessage | None:
     return db.execute(
         select(ListingMessage)

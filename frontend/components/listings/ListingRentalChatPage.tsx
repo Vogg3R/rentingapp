@@ -3,10 +3,14 @@
 import { AppHeader } from "@/components/layout/AppHeader";
 import { InteractivePageShell } from "@/components/layout/InteractivePageShell";
 import { SiteFooter } from "@/components/layout/SiteFooter";
+import { AppToast, type AppToastType } from "@/components/ui/AppToast";
 import { isLoggedIn } from "@/lib/session";
-import { getListingRentalConversation } from "@/services/listing-rentals";
+import {
+  getListingRentalConversation,
+  respondToListingRentalRequest,
+} from "@/services/listing-rentals";
 import type { ListingRentalConversationSummary } from "@/types/listing-rentals";
-import { Calendar, MessageSquare } from "lucide-react";
+import { Calendar, Check, MessageSquare, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -24,12 +28,30 @@ function formatDateRange(start: string, end: string): string {
   return `${fmt(start)} – ${fmt(end)}`;
 }
 
+// Talep durumunu kullanıcı dostu Türkçe metne çevirir.
+function statusLabel(status: string): string {
+  switch (status) {
+    case "pending":
+      return "Beklemede";
+    case "accepted":
+      return "Kabul edildi";
+    case "rejected":
+      return "Reddedildi";
+    case "cancelled":
+      return "İptal edildi";
+    default:
+      return status;
+  }
+}
+
 export function ListingRentalChatPage({ requestId }: ListingRentalChatPageProps) {
   const router = useRouter();
   const [conversation, setConversation] = useState<ListingRentalConversationSummary | null>(
     null
   );
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: AppToastType } | null>(null);
 
   useEffect(() => {
     if (!isLoggedIn()) {
@@ -42,9 +64,36 @@ export function ListingRentalChatPage({ requestId }: ListingRentalChatPageProps)
     });
   }, [requestId, router]);
 
+  // İlan sahibi gelen talebi kabul eder veya reddeder.
+  async function handleRespond(action: "accept" | "reject") {
+    setBusy(true);
+    const res = await respondToListingRentalRequest(requestId, action);
+    setBusy(false);
+    if (!res.ok) {
+      setToast({ message: res.message, type: "error" });
+      return;
+    }
+    setConversation(res.data);
+    setToast({
+      message: action === "accept" ? "Talep kabul edildi." : "Talep reddedildi.",
+      type: "success",
+    });
+  }
+
+  // Toast'u kısa süre sonra otomatik gizle.
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
   const counterpartyLabel =
     conversation?.counterparty_name?.trim() ||
     (conversation?.role === "owner" ? "Kiracı" : "İlan sahibi");
+
+  // Kabul/Reddet butonları yalnızca ilan sahibine ve beklemedeki talepte gösterilir.
+  const canRespond =
+    conversation?.role === "owner" && conversation?.status === "pending";
 
   return (
     <>
@@ -85,7 +134,7 @@ export function ListingRentalChatPage({ requestId }: ListingRentalChatPageProps)
                         {conversation.total_days} gün · ₺{conversation.total_price}
                       </span>
                       <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">
-                        {conversation.status === "pending" ? "Beklemede" : conversation.status}
+                        {statusLabel(conversation.status)}
                       </span>
                     </div>
                     <Link
@@ -96,6 +145,29 @@ export function ListingRentalChatPage({ requestId }: ListingRentalChatPageProps)
                     </Link>
                   </div>
                 </div>
+
+                {canRespond ? (
+                  <div className="mt-4 flex gap-3 border-t border-slate-200 pt-4 dark:border-slate-700">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleRespond("accept")}
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+                    >
+                      <Check className="size-4" aria-hidden />
+                      Kabul Et
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleRespond("reject")}
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-red-300 px-4 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/30"
+                    >
+                      <X className="size-4" aria-hidden />
+                      Reddet
+                    </button>
+                  </div>
+                ) : null}
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-[var(--color-card)]">
@@ -110,6 +182,7 @@ export function ListingRentalChatPage({ requestId }: ListingRentalChatPageProps)
           ) : null}
         </div>
       </InteractivePageShell>
+      {toast ? <AppToast message={toast.message} type={toast.type} /> : null}
       <SiteFooter className="pb-28 md:pb-6" />
     </>
   );
