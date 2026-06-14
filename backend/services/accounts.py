@@ -17,12 +17,16 @@ class RegisterConflictError(Exception):
         super().__init__(field)
 
 
+class InvalidContactError(Exception):
+    """E-posta veya telefon formatı geçersiz."""
+
+
 def register_with_user_create(db: Session, body: UserCreate) -> User:
     try:
         email_norm = body.normalized_email()
         phone_norm = body.normalized_phone()
     except ValueError as e:
-        raise ValueError("invalid_contact") from e
+        raise InvalidContactError from e
 
     if email_norm is not None and users_crud.get_user_by_email(db, email_norm) is not None:
         raise RegisterConflictError("email")
@@ -41,7 +45,7 @@ def register_with_contact_string(db: Session, contact: str, password: str) -> Us
     try:
         _, surface = normalize_contact(contact)
     except ValueError as e:
-        raise ValueError("invalid_contact") from e
+        raise InvalidContactError from e
     email_norm = surface["email"]
     phone_norm = surface["phone"]
 

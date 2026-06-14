@@ -5,7 +5,7 @@ from deps import get_db
 from jwt_tokens import create_access_token, create_refresh_token, decode_refresh_token
 from schemas.auth import GoogleAuthRequest, LoginRequest, RefreshRequest, RegisterRequest
 from services import accounts as accounts_service
-from services.accounts import RegisterConflictError
+from services.accounts import InvalidContactError, RegisterConflictError
 from services.google_auth import verify_google_id_token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -25,7 +25,7 @@ def auth_register(body: RegisterRequest, db: Session = Depends(get_db)):
     """E-posta veya telefon + şifre; veritabanında bcrypt ile saklanır."""
     try:
         user = accounts_service.register_with_contact_string(db, body.contact, body.password)
-    except ValueError:
+    except InvalidContactError:
         raise HTTPException(
             status_code=400,
             detail="Geçerli bir e-posta veya 10 haneli cep telefonu gerekli (5 ile başlamalı).",

@@ -24,7 +24,7 @@ from routers.wallet import router as wallet_router
 from schemas.users import UserCreate, UserResponse
 from services import accounts as accounts_service
 from services import home_feed
-from services.accounts import RegisterConflictError
+from services.accounts import InvalidContactError, RegisterConflictError
 
 logger = logging.getLogger("uvicorn.access")
 
@@ -74,7 +74,7 @@ def register_user(body: UserCreate, db: Session = Depends(get_db)):
     logger.info("POST /users/register received (email=%s phone=%s)", body.email, body.phone)
     try:
         user = accounts_service.register_with_user_create(db, body)
-    except ValueError:
+    except InvalidContactError:
         raise HTTPException(
             status_code=400,
             detail="Geçerli bir e-posta veya 10 haneli cep telefonu gerekli (5 ile başlamalı).",
