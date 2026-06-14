@@ -13,7 +13,6 @@ import { MessageSquare } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 interface AppHeaderProps {
-  apiMessage?: string;
   showCategoryBar?: boolean;
 }
 
@@ -28,7 +27,6 @@ function formatCityLabel(city: string): string {
 }
 
 export function AppHeader({
-  apiMessage,
   showCategoryBar = true,
 }: AppHeaderProps) {
   const pathname = usePathname();
@@ -480,11 +478,6 @@ export function AppHeader({
         </div>
       ) : null}
 
-      {apiMessage ? (
-        <div className="border-t border-emerald-100 bg-emerald-50/90 px-4 py-2 text-center text-xs font-normal text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300 md:text-sm">
-          {apiMessage}
-        </div>
-      ) : null}
     </header>
   );
 }

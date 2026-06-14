@@ -29,10 +29,15 @@ Bu belge, yapay zeka (LLM) asistanının projeyi adım adım geliştirmesi için
 
 ## Aşama 6: Ödeme Havuzu (Escrow) ve Sonlandırma
 - [x] Escrow kilidi ve hakediş aktarımı.
-- [x] Cüzdan simülasyon + Iyzico iskelet (anahtarlarla sandbox akışı).
+- [x] Cüzdan simülasyon (UI); backend'de Iyzico iskelet (V2).
 - [ ] Tam Iyzico Checkout Form SDK entegrasyonu (üretim öncesi).
 
+## Aşama 7: Admin ve teslim dokümantasyonu
+- [x] Admin paneli UI (`/admin`): çekim, iade, kullanıcı silme (cascade).
+- [x] `prodocs/` klasörü: PRD, MVP, plan, progress, tech-stack, DesignSystem.
+
 ## Sonraki (V2)
+- [ ] İlan kiralama kabulünde escrow bloke etme.
 - [ ] Değerlendirme / yorumlar.
 - [ ] Staging deploy otomasyonu.
 - [ ] Native mobil istemci.

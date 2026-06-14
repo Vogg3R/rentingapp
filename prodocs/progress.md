@@ -1,15 +1,15 @@
 # EldenEle — Proje İlerlemesi
 
-Bu dosya, projede şimdiye kadar yapılanları **kronolojik sırayla** özetler. Son güncelleme: 14 Haziran 2026 (akşam oturumu).
+Bu dosya, projede şimdiye kadar yapılanları **kronolojik sırayla** özetler. Son güncelleme: 14 Haziran 2026 (gece oturumu).
 
 ---
 
 ## 1. Ürün tanımı ve dokümantasyon
 
-- **PRD** (`PRD.md`): P2P tersine kiralama platformunun tam ürün gereksinimleri, mimari hedefleri ve kalite stratejisi yazıldı.
-- **MVP kapsamı** (`MVP.md`): İlk sürümde yapılacaklar / yapılmayacaklar netleştirildi (talep ilanı → teklif → kabul → escrow → teslim).
-- **README** (`README.md`): Vizyon, roller, MVP özellikleri ve teknoloji yığını özetlendi; MVP ve PRD belgelerine bağlantılar eklendi.
-- **Geliştirme planı** (`plan.md`): LLM ile adım adım ilerleme için aşamalı yol haritası oluşturuldu (Aşama 1–6).
+- **PRD** (`prodocs/PRD.md`): P2P tersine kiralama platformunun tam ürün gereksinimleri, mimari hedefleri ve kalite stratejisi yazıldı.
+- **MVP kapsamı** (`prodocs/MVP.md`): İlk sürümde yapılacaklar / yapılmayacaklar netleştirildi (talep ilanı → teklif → kabul → escrow → teslim).
+- **README** (`README.md`): Vizyon, roller, MVP özellikleri ve teknoloji yığını özetlendi; prodocs belgelerine bağlantılar eklendi.
+- **Geliştirme planı** (`prodocs/plan.md`): LLM ile adım adım ilerleme için aşamalı yol haritası oluşturuldu (Aşama 1–6).
 
 ---
 
@@ -252,7 +252,8 @@ Aynı gün devamında kalan MVP maddeleri tamamlandı — ayrıntılar **§12**.
 | 10   | *(yerel / henüz commit yok)* Kalan maddeler (§12): refresh, ilan API, profil, admin, Iyzico iskelet, E2E, README |
 | 11   | AI İlan Asistanı (§13): Gemini backend, `/ilan-ver` AI UI — `3bfe8c4`                                            |
 | 12   | *(yerel / henüz commit yok)* İlan detay, profil, istek AI, Google OAuth (§14–§17)                                |
-| 13   | *(yerel / henüz commit yok)* Kategori filtresi, mesajlaşma, UX iyileştirmeleri, Google Maps (§18)                |
+| 13   | *(GitHub)* §19: istek görseli, admin paneli, prodocs, cascade silme — `e816cf5` |
+| 14   | *(GitHub)* §20: kiralama kabul/red, profil tema, UX düzeltmeleri — `de04344`+ |
 
 
 ---
@@ -807,17 +808,76 @@ Bu oturumda istek ilanlarına görsel desteği, istek ilanı silme, form önizle
 | Admin paneli (çekim / iade / kullanıcılar) | **Tamamlandı** |
 | Kullanıcı zincirleme silme | **Tamamlandı** |
 | Teslim dokümantasyonu (prodocs) | **Tamamlandı** |
-| Git commit (§19) | **Bekliyor** — yerel değişiklikler |
+| Git commit (§19) | **Tamamlandı** — `e816cf5` GitHub'a push |
+
+---
+
+## 20. Geliştirme oturumu — kiralama yanıtı, UX düzeltmeleri ve arayüz temizliği (14 Haziran 2026, gece)
+
+Bu oturumda ilan kiralama taleplerine ilan sahibi tarafından **Kabul Et / Reddet** akışı eklendi; mesajlar ve profil düzenleme ekranlarındaki UX hataları giderildi; cüzdan ve ana sayfadaki gereksiz öğeler kaldırıldı.
+
+### 20.1 İlan kiralama talebi — Kabul Et / Reddet (full-stack)
+
+**Backend**
+
+| Dosya | Ne yapıldı |
+| --- | --- |
+| `crud/listing_rentals.py` | `update_request_status` — talep durumunu günceller |
+| `services/listing_rentals.py` | `respond_to_rental_request` — yalnızca ilan sahibi, yalnızca `pending` talepler; `accepted` / `rejected` |
+| `routers/listings.py` | `POST /listings/rental-requests/{id}/accept` ve `/reject` |
+
+**Frontend**
+
+| Dosya | Ne yapıldı |
+| --- | --- |
+| `services/listing-rentals.ts` | `respondToListingRentalRequest(requestId, "accept" \| "reject")` |
+| `ListingRentalChatPage.tsx` | Bekleyen talepte ilan sahibine yeşil **Kabul Et** ve kırmızı **Reddet** butonları; toast + anlık durum güncelleme |
+| `app/mesajlar/page.tsx` | Durum etiketleri: Beklemede / Kabul edildi / Reddedildi |
+
+> Not: Kabul, şimdilik yalnızca talep durumunu değiştirir (escrow bloke etme yok — V2).
+
+### 20.2 Mesajlar listesi — karşı taraf rol etiketi
+
+- `app/mesajlar/page.tsx`: Backend `role` alanı giriş yapan kullanıcının rolünü taşır; kartta gösterilen isim karşı tarafa aittir.
+- Etiket düzeltildi: ilan sahibi görünümünde `Kiracı`, kiracı görünümünde `İlan sahibi` (önceden ters gösteriliyordu).
+
+### 20.3 Profil düzenleme — tema uyumu
+
+- `ProfileEditPage.tsx`: Sabit koyu tema sınıfları (`bg-slate-900` vb.) kaldırıldı.
+- Uygulamanın geri kalanıyla uyumlu `--color-app-bg` / `--color-card` token'ları ve `dark:` varyantları kullanılıyor; açık temadayken sayfa artık koyuya zorlanmıyor.
+
+### 20.4 Cüzdan — Iyzico UI kaldırıldı
+
+- `WalletPage.tsx`: **Iyzico ile başlat** butonu ve `iyzico_token` URL tamamlama akışı kaldırıldı.
+- Yalnızca simülasyon ile **Bakiye yükle** kaldı; yapılandırılmamış Iyzico hata mesajı artık kullanıcıya gösterilmiyor.
+- Backend Iyzico endpoint iskeleti duruyor (V2 / admin için).
+
+### 20.5 Ana sayfa — API başarı banner'ı kaldırıldı
+
+- `AppHeader.tsx`: `apiMessage` prop'u ve yeşil "P2P Tersine Kiralama API'si Başarıyla Çalışıyor!" şeridi kaldırıldı.
+- `app/page.tsx`: `apiMessage={data.mesaj}` geçişi kaldırıldı.
+- Backend kök yanıtındaki `mesaj` alanı API uyumluluğu için duruyor; arayüzde gösterilmiyor.
+
+### 20.6 Güncel durum tablosu (bu oturum)
+
+| Alan | Durum |
+| --- | --- |
+| İlan kiralama Kabul Et / Reddet | **Tamamlandı** |
+| Mesajlar karşı taraf rol etiketi | **Tamamlandı** |
+| Profil düzenleme tema uyumu | **Tamamlandı** |
+| Cüzdan Iyzico UI kaldırma | **Tamamlandı** |
+| Ana sayfa API banner kaldırma | **Tamamlandı** |
+| Git commit (§20) | **Bekliyor** — yerel değişiklikler |
 
 ---
 
 ## Sonraki adımlar (V2 / üretim öncesi)
 
-1. **Tam Iyzico Checkout Form SDK** — üretim ödeme akışı.
-2. **Değerlendirme / yorumlar** — profil “Değerlendirmeler” sekmesi.
-3. **Staging deploy** — barındırma sağlayıcısı secret’ları ile CI job’ı doldurma.
-4. **Playwright** — tarayıcı tabanlı E2E.
-5. **Git commit** — §14–§18 değişikliklerinin kaydı ve push.
+1. **Tam Iyzico Checkout Form SDK** — üretim ödeme akışı (UI şimdilik yalnızca simülasyon).
+2. **İlan kiralama kabulünde escrow** — kabul anında bakiye bloke etme ve teslim onayı.
+3. **Değerlendirme / yorumlar** — profil “Değerlendirmeler” sekmesi.
+4. **Staging deploy** — barındırma sağlayıcısı secret’ları ile CI job’ı doldurma.
+5. **Playwright** — tarayıcı tabanlı E2E.
 6. **Konum koordinatları** — `lat/lng` alanlarının backend modeline ve ilan/talep API’sine eklenmesi.
 7. **İstek ilanı mesajları** — `Mesajlar` sayfasında item request sohbetlerinin listelenmesi (opsiyonel).
 

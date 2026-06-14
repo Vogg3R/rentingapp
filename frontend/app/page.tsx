@@ -47,7 +47,7 @@ export default function Home() {
 
   return (
     <>
-      <AppHeader apiMessage={data.mesaj} />
+      <AppHeader />
       <InteractivePageShell className="bg-slate-50 dark:bg-[#0B1120]">
         <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 pb-20 pt-6 md:pb-0 md:pt-8">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-slate-200/80 pb-4 dark:border-slate-700/80">

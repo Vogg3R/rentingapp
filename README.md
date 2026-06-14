@@ -2,7 +2,7 @@
 
 Talep odaklı kiralama: kullanıcılar ihtiyaç duydukları ürünler için **istek ilanı** açar; ürün sahipleri **teklif** verir. Kabul sonrası **escrow**, **mesajlaşma** ve **teslim onayı** ile döngü tamamlanır. Ürün sahipleri ayrıca doğrudan **kiralık ilan** yayınlayabilir; kiracılar ilan üzerinden **kiralama talebi** gönderip mesajlaşabilir.
 
-> [PRD.md](./PRD.md) · [MVP.md](./MVP.md) · [progress.md](./progress.md) · [plan.md](./plan.md)
+> [prodocs/PRD.md](./prodocs/PRD.md) · [prodocs/MVP.md](./prodocs/MVP.md) · [prodocs/progress.md](./prodocs/progress.md) · [prodocs/plan.md](./prodocs/plan.md) · [prodocs/tech-stack.md](./prodocs/tech-stack.md) · [prodocs/DesignSystem.md](./prodocs/DesignSystem.md)
 
 ## MVP özellikleri (özet)
 
@@ -12,7 +12,9 @@ Talep odaklı kiralama: kullanıcılar ihtiyaç duydukları ürünler için **is
 | Talep ilanı → teklif → kabul → escrow → mesaj → teslim  | Çalışır                              |
 | Ürün ilanı oluşturma ve detay                           | Çalışır                              |
 | İlan detayından kiralama talebi + sohbet                | Çalışır                              |
+| İlan sahibi kiralama talebini kabul / reddet            | Çalışır                              |
 | Cüzdan (simülasyon yükleme / çekim talebi)              | Çalışır                              |
+| Admin paneli (çekim, iade, kullanıcı yönetimi)          | Çalışır (`/admin`, `X-Admin-Key`)  |
 | JWT + refresh token; Google ile giriş                   | Çalışır                              |
 | AI ilan asistanı (Gemini) — `/ilan-ver`, `/istek-ilani` | Çalışır                              |
 | Kategori filtresi (header + ana sayfa)                  | Çalışır                              |
@@ -32,7 +34,7 @@ Ana sayfa yalnızca API’den gelen gerçek ilanları gösterir (demo/mock veri 
 | Auth     | JWT + refresh; Google OAuth (`@react-oauth/google`)            |
 | Harita   | Google Maps (`@react-google-maps/api`), Places Autocomplete    |
 | AI       | Google Gemini (`google-genai`) — `POST /ai/generate-listing`   |
-| Ödeme    | MVP simülasyon; opsiyonel Iyzico sandbox iskelet               |
+| Ödeme    | MVP simülasyon (cüzdan UI); backend'de Iyzico iskelet (V2)     |
 
 
 **Mimari:** UI bileşenleri yalnızca `frontend/services/` katmanını çağırır; backend’de `routers` → `services` → `crud` ayrımı uygulanır (mobil geçişe uygun).
@@ -105,7 +107,13 @@ py -m pytest -q
 
 **Google Cloud Console:** OAuth için Authorized JavaScript origins → `http://localhost:3000`. Maps için **Maps JavaScript API**, **Places API** ve **Geocoding API** etkin olmalı.
 
-## Admin (çekim onayı)
+## Admin paneli
+
+Tarayıcı: [http://localhost:3000/admin](http://localhost:3000/admin) — `ADMIN_API_KEY` ile giriş.
+
+Sekmeler: para çekme onay/red, anlaşmazlık iadesi, kullanıcı listeleme ve silme (zincirleme).
+
+API (curl) örneği:
 
 ```bash
 curl -H "X-Admin-Key: YOUR_ADMIN_KEY" http://127.0.0.1:8000/admin/withdrawals/pending
@@ -127,8 +135,9 @@ Anlaşmazlık iadesi: `POST /admin/deals/{deal_id}/refund`
 | `/talep/[id]`                    | Teklif ver / kabul et                                  |
 | `/cuzdan`                        | Bakiye yükle / çekim talebi                            |
 | `/mesajlar`                      | İlan kiralama sohbetleri + kabul edilen teklifler      |
-| `/mesajlar/kiralama/[requestId]` | İlan kiralama sohbeti                                  |
+| `/mesajlar/kiralama/[requestId]` | İlan kiralama sohbeti (ilan sahibi: kabul / reddet)  |
 | `/islem/[dealId]`                | Talep işlemi: mesaj, teslim onayı, anlaşmazlık         |
+| `/admin`                         | Admin paneli (çekim, iade, kullanıcılar)               |
 | `/profil`                        | Kendi profilim (ilanlar, istekler)                     |
 | `/profil/duzenle`                | Profil ve fotoğraf düzenleme                           |
 | `/profil/[id]`                   | Herkese açık kullanıcı profili                         |
@@ -139,7 +148,7 @@ Anlaşmazlık iadesi: `POST /admin/deals/{deal_id}/refund`
 1. İki hesap: talep eden + tedarikçi (`/auth`).
 2. Talep eden: `/cuzdan` → demo yükleme.
 3. Talep eden: `/istek-ilani` → yayınla **veya** tedarikçi: `/ilan-ver` → ilan yayınla.
-4. Tedarikçi: `/talep/{id}` → teklif ver **veya** kiracı: `/ilan/{id}` → kiralama talebi.
+4. Tedarikçi: `/talep/{id}` → teklif ver **veya** kiracı: `/ilan/{id}` → kiralama talebi → ilan sahibi `/mesajlar` → **Kabul et / Reddet**.
 5. Talep eden: teklifi **Kabul et** → `/mesajlar` → mesajlaş.
 6. Talep eden: **Teslim aldım — onayla**.
 
