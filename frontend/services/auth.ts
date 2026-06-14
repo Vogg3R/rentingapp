@@ -106,7 +106,7 @@ export async function registerWithContactPassword(
     return {
       ok: false,
       message:
-        "Sunucuya bağlanılamıyor. Backend’in çalıştığından emin olun.",
+        "Sunucuya bağlanılamıyor. Vercel deploy'da NEXT_PUBLIC_BACKEND_URL (Render backend adresi) tanımlı mı? Yerelde backend çalışıyor mu?",
     };
   }
 

@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 import logging
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -39,9 +40,19 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+
+def _cors_origins() -> list[str]:
+    """Virgülle ayrılmış izin verilen origin listesi (Vercel + localhost)."""
+    raw = os.getenv(
+        "ALLOWED_ORIGINS",
+        "http://localhost:3000,https://rentingapp-gules.vercel.app",
+    )
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Her yerden gelen isteği kabul et
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

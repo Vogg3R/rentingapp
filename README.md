@@ -143,6 +143,30 @@ Anlaşmazlık iadesi: `POST /admin/deals/{deal_id}/refund`
 | `/profil/[id]`                   | Herkese açık kullanıcı profili                         |
 
 
+## Production deploy (Vercel + Render)
+
+Frontend **Vercel**, backend **Render**, veritabanı **Neon** ile çalışacak şekilde ayarlayın.
+
+### Render (backend)
+
+1. Repo'yu bağlayın; root directory: `backend`, start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+2. Ortam değişkenleri:
+   - `DATABASE_URL` — Neon PostgreSQL connection string
+   - `JWT_SECRET` — güçlü rastgele secret
+   - `ALLOWED_ORIGINS` — `http://localhost:3000,https://SIZIN-VERCEL-ADRESINIZ.vercel.app`
+   - `FRONTEND_URL` — Vercel URL'niz
+   - (Opsiyonel) `GEMINI_API_KEY`, `GOOGLE_CLIENT_ID`, `ADMIN_API_KEY`
+
+### Vercel (frontend)
+
+1. Root directory: `frontend`
+2. **Zorunlu** ortam değişkeni:
+   - `NEXT_PUBLIC_BACKEND_URL` = Render backend URL'niz (örn. `https://eldenele-api.onrender.com`)
+3. Değişkenleri ekledikten sonra **Redeploy** yapın (`NEXT_PUBLIC_*` build sırasında gömülür).
+4. Google OAuth kullanıyorsanız Google Cloud Console'da Authorized JavaScript origins'e Vercel adresinizi ekleyin.
+
+> **Sık hata:** Vercel'de `NEXT_PUBLIC_BACKEND_URL` yoksa tarayıcı `http://127.0.0.1:8000`'e istek atar; bu da kayıt/giriş hatalarına yol açar.
+
 ## Önerilen manuel test akışı
 
 1. İki hesap: talep eden + tedarikçi (`/auth`).

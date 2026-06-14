@@ -6,6 +6,12 @@ export function resolveBackendRootUrl(): string {
     process.env.NEXT_PUBLIC_BACKEND_URL?.trim() ||
     process.env.BACKEND_URL?.trim();
   if (fromEnv) return fromEnv.replace(/\/+$/, "");
+  // Vercel'de bu değişken yoksa tarayıcı kullanıcının kendi localhost:8000'ine gider — deploy'da mutlaka tanımlayın.
+  if (typeof window !== "undefined" && window.location.hostname.endsWith(".vercel.app")) {
+    console.warn(
+      "NEXT_PUBLIC_BACKEND_URL tanımlı değil. Vercel → Settings → Environment Variables → Render backend URL'nizi ekleyip redeploy edin."
+    );
+  }
   return "http://127.0.0.1:8000";
 }
 
