@@ -179,18 +179,29 @@ export function RequestDetailPage({ requestId }: RequestDetailPageProps) {
             <div className="mt-8 grid items-start gap-8 md:grid-cols-3">
               <div className="min-w-0 space-y-6 md:col-span-2">
                 <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 shadow-sm dark:border-slate-700">
-                  <span className="absolute left-4 top-4 rounded-full bg-orange-500 px-3 py-1 text-xs font-bold tracking-wide text-white">
+                  <span className="absolute left-4 top-4 z-10 rounded-full bg-orange-500 px-3 py-1 text-xs font-bold tracking-wide text-white">
                     ARANIYOR
                   </span>
-                  <div className="flex flex-col items-center gap-3 text-center">
-                    <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-800/80 px-5 py-3 text-slate-100 backdrop-blur-sm">
-                      <Search className="size-5 text-blue-300" aria-hidden />
-                      <Box className="size-5 text-blue-300" aria-hidden />
+                  {request.image_base64 ? (
+                    // Talep sahibinin yüklediği temsili görsel
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={request.image_base64}
+                      alt={request.title}
+                      className="size-full object-cover"
+                    />
+                  ) : (
+                    // Görsel yoksa koyu lacivert ikonlu fallback
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-800/80 px-5 py-3 text-slate-100 backdrop-blur-sm">
+                        <Search className="size-5 text-blue-300" aria-hidden />
+                        <Box className="size-5 text-blue-300" aria-hidden />
+                      </div>
+                      <p className="text-sm font-semibold tracking-wider text-slate-300">
+                        TALEP EDİLEN ÜRÜN
+                      </p>
                     </div>
-                    <p className="text-sm font-semibold tracking-wider text-slate-300">
-                      TALEP EDİLEN ÜRÜN
-                    </p>
-                  </div>
+                  )}
                 </div>
 
                 <div>

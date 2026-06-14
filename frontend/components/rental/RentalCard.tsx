@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Star } from "lucide-react";
+import { ImageOff, Star } from "lucide-react";
 import type { RentalListing, RentalStatus } from "@/types/api";
 
 const statusLabel: Record<RentalStatus, string> = {
@@ -43,13 +43,29 @@ export function RentalCard({ listing }: RentalCardProps) {
       className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] transition-all duration-300 ease-out hover:-translate-y-2 hover:border-blue-500/30 hover:shadow-[0_8px_30px_rgba(37,99,235,0.15)] dark:border-slate-600/70 dark:bg-[var(--color-card)] dark:ring-1 dark:ring-white/10"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden rounded-t-xl bg-slate-100 dark:bg-slate-900">
-        <Image
-          src={imageUrl}
-          alt={title}
-          fill
-          className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
-          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
-        />
+        {imageUrl ? (
+          imageUrl.startsWith("data:") ? (
+            // Kullanıcının yüklediği Base64 görsel
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageUrl}
+              alt={title}
+              className="h-full w-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-110"
+            />
+          ) : (
+            <Image
+              src={imageUrl}
+              alt={title}
+              fill
+              className="object-cover object-center transition-transform duration-500 ease-out group-hover:scale-110"
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 25vw"
+            />
+          )
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-slate-100 dark:bg-slate-800">
+            <ImageOff className="size-10 text-slate-300 dark:text-slate-600" aria-hidden />
+          </div>
+        )}
       </div>
       <div className="flex flex-col gap-3 p-4">
         <div className="flex flex-wrap items-start justify-between gap-2">

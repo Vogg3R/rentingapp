@@ -33,6 +33,17 @@ def get_request(request_id: UUID, db: Session = Depends(get_db)) -> ItemRequestR
     return offers_service.get_item_request(db, request_id)
 
 
+@router.delete("/{request_id}")
+def delete_request(
+    request_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, str]:
+    """Talep sahibi kendi istek ilanını kalıcı olarak siler."""
+    item_requests_service.delete_item_request(db, request_id, current_user)
+    return {"message": "İstek ilanı başarıyla silindi."}
+
+
 @router.post("/{request_id}/offers", response_model=OfferRead, status_code=201)
 def create_offer(
     request_id: UUID,

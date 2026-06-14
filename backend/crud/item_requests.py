@@ -17,6 +17,7 @@ def create_item_request(
     max_daily_budget: Decimal,
     duration_days: int,
     location: str,
+    image_base64: str | None = None,
 ) -> ItemRequest:
     row = ItemRequest(
         requester_id=requester_id,
@@ -26,6 +27,7 @@ def create_item_request(
         max_daily_budget=max_daily_budget,
         duration_days=duration_days,
         location=location,
+        image_base64=image_base64,
     )
     db.add(row)
     db.commit()
@@ -56,3 +58,8 @@ def list_item_requests(db: Session, *, status: str | None = None) -> list[ItemRe
     if status is not None:
         stmt = stmt.where(ItemRequest.status == status)
     return list(db.execute(stmt).scalars())
+
+
+def delete_item_request(db: Session, item_request: ItemRequest) -> None:
+    db.delete(item_request)
+    db.commit()

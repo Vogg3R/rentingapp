@@ -13,6 +13,7 @@ export interface ItemRequest {
   max_daily_budget: number;
   duration_days: number;
   location: string;
+  image_base64?: string | null;
   status: string;
   created_at: string;
   requester?: RequesterPreview | null;
@@ -25,6 +26,7 @@ export interface ItemRequestCreatePayload {
   max_daily_budget: number;
   duration_days: number;
   location: string;
+  image_base64?: string | null;
 }
 
 export interface Offer {
@@ -57,17 +59,25 @@ export interface DealSummary {
   created_at: string;
 }
 
+export interface MessageSender {
+  id: string;
+  name: string | null;
+  avatar_base64: string | null;
+}
+
 export interface DealMessage {
   id: string;
   thread_id: string;
   sender_id: string;
   body: string;
   created_at: string;
+  sender?: MessageSender | null;
 }
 
 export interface HomeItemRequest {
   id: string;
   title: string;
+  imageUrl?: string | null;
   maxDailyBudget: number;
   durationDays: number;
   location: string;

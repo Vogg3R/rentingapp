@@ -21,6 +21,14 @@ interface DealWorkspacePageProps {
   dealId: string;
 }
 
+/** İsimden baş harf(ler)ini üretir (avatar fallback için). */
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+}
+
 export function DealWorkspacePage({ dealId }: DealWorkspacePageProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<DealMessage[]>([]);
@@ -123,22 +131,54 @@ export function DealWorkspacePage({ dealId }: DealWorkspacePageProps) {
             </p>
           )}
 
-          <ul className="mt-6 max-h-80 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+          <ul className="mt-6 flex max-h-80 flex-col gap-4 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
             {messages.length === 0 && (
               <li className="text-sm text-slate-500">Henüz mesaj yok. İlk mesajı siz yazın.</li>
             )}
-            {messages.map((m) => (
-              <li
-                key={m.id}
-                className={`text-sm ${
-                  m.sender_id === user?.id
-                    ? "text-right text-primary"
-                    : "text-slate-700 dark:text-slate-200"
-                }`}
-              >
-                {m.body}
-              </li>
-            ))}
+            {messages.map((m) => {
+              const isOwn = m.sender_id === user?.id;
+              const senderName = m.sender?.name?.trim() || "Kullanıcı";
+              const senderAvatar = m.sender?.avatar_base64 ?? null;
+
+              if (isOwn) {
+                // Kendi mesajlarımız: sağa yaslı, mavi baloncuk, isim/avatar yok.
+                return (
+                  <li key={m.id} className="flex justify-end">
+                    <p className="max-w-[80%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-primary px-4 py-2 text-sm text-white shadow-sm">
+                      {m.body}
+                    </p>
+                  </li>
+                );
+              }
+
+              // Karşı tarafın mesajları: sola yaslı, avatar + isim + gri baloncuk.
+              return (
+                <li key={m.id} className="flex items-start justify-start gap-2">
+                  <div className="relative size-8 shrink-0 overflow-hidden rounded-full border border-slate-300/80 bg-slate-200 dark:border-slate-600 dark:bg-slate-700">
+                    {senderAvatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={senderAvatar}
+                        alt={senderName}
+                        className="size-full object-cover object-center"
+                      />
+                    ) : (
+                      <span className="flex size-full items-center justify-center text-[10px] font-bold text-slate-600 dark:text-slate-200">
+                        {initialsFromName(senderName)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 max-w-[80%]">
+                    <p className="mb-1 text-xs text-gray-500 dark:text-slate-400">
+                      {senderName}
+                    </p>
+                    <p className="whitespace-pre-wrap break-words rounded-2xl rounded-tl-md bg-slate-100 px-4 py-2 text-sm text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-200">
+                      {m.body}
+                    </p>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
 
           <div className="mt-4 flex gap-2">

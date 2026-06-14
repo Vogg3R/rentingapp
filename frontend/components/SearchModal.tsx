@@ -2,6 +2,8 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Box, Camera, Search, Tent, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, type KeyboardEvent } from "react";
 import { useSearchModal } from "@/components/providers/SearchModalContext";
 
 const RECENT_SEARCHES = ["Matkap", "GoPro 11", "Çadır"] as const;
@@ -14,6 +16,24 @@ const POPULAR_CATEGORIES = [
 
 export function SearchModal() {
   const { isSearchOpen, setIsSearchOpen } = useSearchModal();
+  const router = useRouter();
+  const [query, setQuery] = useState("");
+
+  // Arama terimini sonuç sayfasına yönlendirir ve modalı kapatır.
+  function runSearch(term: string) {
+    const trimmed = term.trim();
+    if (!trimmed) return;
+    setIsSearchOpen(false);
+    setQuery("");
+    router.push(`/arama?q=${encodeURIComponent(trimmed)}`);
+  }
+
+  function handleInputKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      runSearch(query);
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -38,6 +58,9 @@ export function SearchModal() {
               <input
                 autoFocus
                 type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={handleInputKeyDown}
                 placeholder="İlan, ürün veya kategori ara..."
                 className="min-w-0 flex-1 bg-transparent text-base text-slate-800 outline-none placeholder:text-slate-400 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
@@ -63,6 +86,7 @@ export function SearchModal() {
                     <button
                       key={item}
                       type="button"
+                      onClick={() => runSearch(item)}
                       className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition-colors hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                     >
                       {item}
@@ -80,6 +104,7 @@ export function SearchModal() {
                     <button
                       key={category.label}
                       type="button"
+                      onClick={() => runSearch(category.label)}
                       className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
                       <category.icon className="size-4 text-blue-600" />

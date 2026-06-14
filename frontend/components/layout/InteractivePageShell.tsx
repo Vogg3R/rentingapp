@@ -83,8 +83,16 @@ export function InteractivePageShell({
   const parallaxStyle = useCallback(
     (layerKey: ParallaxLayerKey): CSSProperties => {
       const layer = PARALLAX_LAYER[layerKey];
+      const tx = parallax.nx * layer.kx;
+      const ty = parallax.ny * layer.ky;
+      // Hareket yokken transform uygulama: kalıcı GPU katmanı Windows ölçeklemede
+      // metni bulanıklaştırıyor. Yalnızca fare hareket ederken katman oluşturulur.
+      if (Math.abs(tx) < 0.01 && Math.abs(ty) < 0.01) {
+        return { transform: "none" };
+      }
       return {
-        transform: `translate3d(${parallax.nx * layer.kx}px, ${parallax.ny * layer.ky}px, 0)`,
+        transform: `translate3d(${tx}px, ${ty}px, 0)`,
+        willChange: "transform",
       };
     },
     [parallax.nx, parallax.ny],
@@ -163,7 +171,7 @@ export function ParallaxBand({ band, className, children }: ParallaxBandProps) {
   return (
     <div
       className={mergeClass([
-        "will-change-transform transition-transform duration-300 ease-out",
+        "transition-transform duration-300 ease-out",
         className,
       ])}
       style={parallaxStyle(band)}

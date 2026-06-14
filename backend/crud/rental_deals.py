@@ -62,6 +62,23 @@ def list_deals_for_user(db: Session, user_id: UUID) -> list[RentalDeal]:
     )
 
 
+def list_disputed_deals(db: Session) -> list[RentalDeal]:
+    """Admin iade ekranı için anlaşmazlıktaki kiralama işlemleri."""
+    return list(
+        db.execute(
+            select(RentalDeal)
+            .options(
+                joinedload(RentalDeal.item_request).joinedload(ItemRequest.requester),
+                joinedload(RentalDeal.accepted_offer).joinedload(Offer.supplier),
+            )
+            .where(RentalDeal.deal_status == "disputed")
+            .order_by(RentalDeal.created_at.desc())
+        )
+        .unique()
+        .scalars()
+    )
+
+
 def get_thread_for_deal(db: Session, deal_id: UUID) -> MessageThread | None:
     return (
         db.execute(select(MessageThread).where(MessageThread.rental_deal_id == deal_id))
@@ -73,6 +90,7 @@ def list_messages(db: Session, thread_id: UUID) -> list[Message]:
     return list(
         db.execute(
             select(Message)
+            .options(joinedload(Message.sender))
             .where(Message.thread_id == thread_id)
             .order_by(Message.created_at.asc())
         ).scalars()

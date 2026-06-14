@@ -3,10 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { useCategoryFilter } from "@/components/providers/CategoryFilterContext";
-import {
-  InteractivePageShell,
-  ParallaxBand,
-} from "@/components/layout/InteractivePageShell";
+import { InteractivePageShell } from "@/components/layout/InteractivePageShell";
 import { ListingSkeleton } from "@/components/listing/ListingSkeleton";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { RentalCard } from "@/components/rental/RentalCard";
@@ -74,10 +71,7 @@ export default function Home() {
             </div>
           </div>
 
-          <ParallaxBand
-            band="listings"
-            className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
-          >
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {isLoading ? (
               <>
                 <ListingSkeleton />
@@ -123,7 +117,7 @@ export default function Home() {
               </motion.div>
             ))
               : null}
-          </ParallaxBand>
+          </div>
 
           <section className="mt-12">
             <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-slate-200/80 pb-4 dark:border-slate-700/80">
@@ -139,7 +133,7 @@ export default function Home() {
                 href="/istek-ilani"
                 className="inline-flex shrink-0 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-primary/90"
               >
-                Kiralamak İstediğiniz Ürün İçin İlan Açın
+                İstek İlan Oluşturun
               </Link>
             </div>
 
@@ -177,13 +171,24 @@ export default function Home() {
                     className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] transition-all duration-300 ease-out hover:-translate-y-2 hover:border-blue-500/30 hover:shadow-[0_8px_30px_rgba(37,99,235,0.15)] dark:border-slate-600/70 dark:bg-[var(--color-card)] dark:ring-1 dark:ring-white/10"
                   >
                     <div className="relative flex h-32 items-center justify-center overflow-hidden rounded-t-xl bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900">
-                      <span className="absolute left-3 top-3 rounded-full bg-orange-500 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-white">
+                      <span className="absolute left-3 top-3 z-10 rounded-full bg-orange-500 px-2.5 py-0.5 text-[10px] font-bold tracking-wide text-white">
                         ARANIYOR
                       </span>
-                      <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2 text-slate-100 backdrop-blur-sm transition-transform duration-500 ease-out group-hover:scale-110">
-                        <Search className="size-4 text-blue-300" />
-                        <Box className="size-4 text-blue-300" />
-                      </div>
+                      {requestItem.imageUrl ? (
+                        // Kullanıcı temsili görsel yüklediyse onu göster
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={requestItem.imageUrl}
+                          alt={requestItem.title}
+                          className="absolute inset-0 size-full object-cover object-center transition-transform duration-500 ease-out group-hover:scale-110"
+                        />
+                      ) : (
+                        // Görsel yoksa koyu lacivert ikonlu fallback
+                        <div className="flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-800/80 px-4 py-2 text-slate-100 backdrop-blur-sm transition-transform duration-500 ease-out group-hover:scale-110">
+                          <Search className="size-4 text-blue-300" />
+                          <Box className="size-4 text-blue-300" />
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-1 flex-col gap-3 p-4">

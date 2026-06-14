@@ -4,19 +4,18 @@ import { AppHeader } from "@/components/layout/AppHeader";
 import { InteractivePageShell } from "@/components/layout/InteractivePageShell";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { isLoggedIn } from "@/lib/session";
-import { fetchWalletSummary, withdrawFromWallet } from "@/services/wallet";
+import {
+  depositToWallet,
+  fetchWalletSummary,
+  withdrawFromWallet,
+} from "@/services/wallet";
 import type { WalletSummary } from "@/types/wallet";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import {
-  completeIyzicoDeposit,
-  depositToWallet,
-} from "@/services/wallet";
 
 export function WalletPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [summary, setSummary] = useState<WalletSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [depositAmount, setDepositAmount] = useState("500");
@@ -53,36 +52,15 @@ export function WalletPage() {
     };
   }, [router]);
 
-  useEffect(() => {
-    const token = searchParams.get("iyzico_token");
-    const amount = Number(searchParams.get("amount"));
-    if (!token || !amount) return;
-    void (async () => {
-      setBusy(true);
-      const res = await completeIyzicoDeposit(token, amount);
-      setBusy(false);
-      if (!res.ok) setError(res.message);
-      else {
-        setError(null);
-        await load();
-        router.replace("/cuzdan");
-      }
-    })();
-  }, [searchParams, load, router]);
-
-  async function handleDeposit(simulated = true) {
+  async function handleDeposit() {
     const amount = Number(depositAmount);
     if (!amount || amount <= 0) return;
     setBusy(true);
     setError(null);
-    const res = await depositToWallet(amount, simulated ? "simulated" : "iyzico");
+    const res = await depositToWallet(amount, "simulated");
     setBusy(false);
     if (!res.ok) {
       setError(res.message);
-      return;
-    }
-    if (res.data.mode === "iyzico_pending" && res.data.checkout_url) {
-      window.location.href = res.data.checkout_url;
       return;
     }
     await load();
@@ -109,8 +87,7 @@ export function WalletPage() {
         <div className="mx-auto max-w-lg px-4 py-8 pb-24">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Cüzdan</h1>
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-            Simülasyon anında yükler. Iyzico anahtarları backend&apos;de tanımlıysa ikinci
-            buton sandbox akışını başlatır.
+            Bakiye yükleme simülasyon olarak anında hesabınıza eklenir.
           </p>
 
           {error && (
@@ -139,18 +116,10 @@ export function WalletPage() {
                 <button
                   type="button"
                   disabled={busy}
-                  onClick={() => void handleDeposit(true)}
+                  onClick={() => void handleDeposit()}
                   className="mt-3 w-full rounded-lg bg-primary py-2 text-sm font-bold text-white disabled:opacity-60"
                 >
-                  Simülasyon ile yükle
-                </button>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void handleDeposit(false)}
-                  className="mt-2 w-full rounded-lg border border-primary py-2 text-sm font-bold text-primary disabled:opacity-60"
-                >
-                  Iyzico ile başlat
+                  Bakiye yükle
                 </button>
               </section>
 

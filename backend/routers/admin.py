@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 
 from deps import get_db
+from schemas.admin import AdminDealRead, AdminUserRead, AdminWithdrawalRead
 from schemas.wallet import WalletTransactionRead
 from schemas.deals import RentalDealRead
 from services import admin as admin_service
@@ -17,12 +18,36 @@ def _admin_key(x_admin_key: str | None = Header(default=None, alias="X-Admin-Key
 
 
 @router.get(
-    "/withdrawals/pending",
-    response_model=list[WalletTransactionRead],
+    "/users",
+    response_model=list[AdminUserRead],
     dependencies=[Depends(_admin_key)],
 )
-def list_pending_withdrawals(db: Session = Depends(get_db)) -> list[WalletTransactionRead]:
+def list_users(db: Session = Depends(get_db)) -> list[AdminUserRead]:
+    return admin_service.list_users(db)
+
+
+@router.delete("/users/{user_id}", dependencies=[Depends(_admin_key)])
+def delete_user(user_id: UUID, db: Session = Depends(get_db)) -> dict[str, str]:
+    admin_service.delete_user(db, user_id)
+    return {"message": "Kullanıcı başarıyla silindi."}
+
+
+@router.get(
+    "/withdrawals/pending",
+    response_model=list[AdminWithdrawalRead],
+    dependencies=[Depends(_admin_key)],
+)
+def list_pending_withdrawals(db: Session = Depends(get_db)) -> list[AdminWithdrawalRead]:
     return admin_service.list_pending_withdrawals(db)
+
+
+@router.get(
+    "/deals/disputed",
+    response_model=list[AdminDealRead],
+    dependencies=[Depends(_admin_key)],
+)
+def list_disputed_deals(db: Session = Depends(get_db)) -> list[AdminDealRead]:
+    return admin_service.list_disputed_deals(db)
 
 
 @router.post(

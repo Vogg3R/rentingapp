@@ -53,6 +53,17 @@ export async function createItemRequest(
   }
 }
 
+export async function deleteItemRequest(
+  id: string
+): Promise<ApiResult<{ message: string }>> {
+  try {
+    const res = await authorizedFetch(`/requests/${id}`, { method: "DELETE" });
+    return parseJson(res, "İstek ilanı silinemedi.");
+  } catch {
+    return { ok: false, message: "Sunucuya bağlanılamıyor." };
+  }
+}
+
 export async function listOffers(requestId: string): Promise<ApiResult<Offer[]>> {
   try {
     const res = await authorizedFetch(`/requests/${requestId}/offers`);

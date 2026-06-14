@@ -17,6 +17,7 @@ def create_listing(db: Session, owner: User, body: ListingCreate) -> Listing:
         )
 
     price = Decimal(str(body.daily_price))
+    image = body.image_base64.strip() if body.image_base64 else None
     return listings_crud.create_listing(
         db,
         owner_id=owner.id,
@@ -27,6 +28,7 @@ def create_listing(db: Session, owner: User, body: ListingCreate) -> Listing:
         min_days=body.min_days,
         max_days=body.max_days,
         location=body.location.strip(),
+        image_base64=image,
     )
 
 

@@ -19,6 +19,7 @@ import {
 import { AppToast, type AppToastType } from "@/components/ui/AppToast";
 import { StepperInput } from "@/components/ui/StepperInput";
 import { isLoggedIn } from "@/lib/session";
+import { fileToDataUrl } from "@/lib/profile-images";
 import { generateListingWithAI } from "@/services/ai";
 import { createListing } from "@/services/listings";
 
@@ -82,11 +83,6 @@ export function ListingFormPage() {
       ? 0
       : Math.min(Math.max(0, previewImageIndex), previewCount - 1);
 
-  const handleSaveDraft = useCallback(() => {
-    // İleride services/listings.ts üzerinden API'ye gidecek
-    showToast("Taslak kaydedildi (MVP: gerçek API henüz yok).", "success");
-  }, [showToast]);
-
   const generateWithAI = useCallback(async () => {
     if (!isLoggedIn()) {
       router.push("/auth");
@@ -139,6 +135,18 @@ export function ListingFormPage() {
       showToast("Maksimum gün, minimum günden küçük olamaz.");
       return;
     }
+
+    // İlk (birincil) fotoğrafı Base64'e çevirip payload'a ekle.
+    let imageBase64: string | undefined;
+    if (photos.length > 0) {
+      try {
+        imageBase64 = await fileToDataUrl(photos[0]);
+      } catch {
+        showToast("Fotoğraf işlenemedi, lütfen tekrar deneyin.");
+        return;
+      }
+    }
+
     const res = await createListing({
       title: title.trim(),
       description: description.trim(),
@@ -147,6 +155,7 @@ export function ListingFormPage() {
       min_days: min,
       max_days: max,
       location: address.trim(),
+      image_base64: imageBase64,
     });
     if (!res.ok) {
       showToast(res.message);
@@ -162,6 +171,7 @@ export function ListingFormPage() {
     minDays,
     maxDays,
     address,
+    photos,
     showToast,
   ]);
 
@@ -203,10 +213,7 @@ export function ListingFormPage() {
 
   return (
     <InteractivePageShell className="bg-[var(--color-app-bg)]">
-      <ListingFormHeader
-        onSaveDraft={handleSaveDraft}
-        onPublish={handlePublish}
-      />
+      <ListingFormHeader onPublish={handlePublish} />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -424,13 +431,6 @@ export function ListingFormPage() {
             </FormSection>
 
             <div className="flex flex-col gap-3 border-t border-slate-200 pt-6 dark:border-slate-700 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={handleSaveDraft}
-                className="rounded-xl border border-slate-200 bg-[var(--color-card)] px-6 py-3 text-sm font-bold text-[var(--color-text)] shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800"
-              >
-                Taslak olarak kaydet
-              </button>
               <button
                 type="button"
                 onClick={handlePublish}

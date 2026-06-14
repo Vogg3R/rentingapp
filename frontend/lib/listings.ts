@@ -1,4 +1,20 @@
-import type { ApiRootResponse, RentalListing } from "@/types/api";
+import type { ApiRootResponse, RentalListing, RentalStatus } from "@/types/api";
+import type { Listing } from "@/types/listings";
+
+/** `GET /listings` ham yanıtını (`Listing`) kart için `RentalListing`'e dönüştürür. */
+export function mapListingToRental(listing: Listing): RentalListing {
+  const status: RentalStatus = listing.status === "active" ? "available" : "rented";
+  return {
+    id: listing.id,
+    title: listing.title,
+    imageUrl: listing.image_base64 ?? null,
+    status,
+    pricePerDay: Number(listing.daily_price),
+    category: listing.category,
+    sellerName: listing.owner?.name ?? undefined,
+    sellerAvatarUrl: listing.owner?.avatar_base64 ?? undefined,
+  };
+}
 
 /** Anasayfa kategori filtresi */
 export function filterListingsByCategory(
@@ -21,11 +37,15 @@ function isRentalListing(value: unknown): value is RentalListing {
     o.sellerAvatarUrl === undefined || typeof o.sellerAvatarUrl === "string";
   const hasValidCategory =
     o.category === undefined || typeof o.category === "string";
+  const hasValidImageUrl =
+    o.imageUrl === undefined ||
+    o.imageUrl === null ||
+    typeof o.imageUrl === "string";
 
   return (
     typeof o.id === "string" &&
     typeof o.title === "string" &&
-    typeof o.imageUrl === "string" &&
+    hasValidImageUrl &&
     (o.status === "available" || o.status === "rented") &&
     typeof o.pricePerDay === "number" &&
     Number.isFinite(o.pricePerDay) &&

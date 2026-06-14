@@ -2,7 +2,7 @@ from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from models import Wallet, WalletTransaction
 
@@ -59,6 +59,8 @@ def list_pending_withdrawals(db: Session) -> list[WalletTransaction]:
     return list(
         db.execute(
             select(WalletTransaction)
+            # Admin tablosunda kullanıcı adını göstermek için cüzdan→kullanıcı eager-load.
+            .options(joinedload(WalletTransaction.wallet).joinedload(Wallet.user))
             .where(
                 WalletTransaction.type == "withdrawal",
                 WalletTransaction.status == "pending",

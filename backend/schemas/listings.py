@@ -23,6 +23,8 @@ class ListingCreate(BaseModel):
     min_days: int = Field(ge=1)
     max_days: int = Field(ge=1)
     location: str = Field(min_length=2, max_length=255)
+    # Base64 data URL (data:image/...;base64,...) — opsiyonel birincil görsel
+    image_base64: str | None = None
 
 
 class ListingRead(BaseModel):
@@ -37,6 +39,7 @@ class ListingRead(BaseModel):
     min_days: int
     max_days: int
     location: str
+    image_base64: str | None = None
     status: str
     created_at: datetime
     owner: ListingOwnerPreview | None = None

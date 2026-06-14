@@ -108,6 +108,8 @@ class ItemRequest(Base):
     max_daily_budget: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     duration_days: Mapped[int] = mapped_column(nullable=False)
     location: Mapped[str] = mapped_column(String(255), nullable=False)
+    # MVP: temsili talep görseli Base64 data URL olarak tutulur (ilan görselleri gibi).
+    image_base64: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="open"
     )  # open|closed|cancelled
@@ -142,6 +144,8 @@ class Listing(Base):
     min_days: Mapped[int] = mapped_column(nullable=False)
     max_days: Mapped[int] = mapped_column(nullable=False)
     location: Mapped[str] = mapped_column(String(255), nullable=False)
+    # MVP: birincil ilan görseli Base64 data URL olarak tutulur (profil resimleri gibi).
+    image_base64: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="active"
     )  # active|inactive

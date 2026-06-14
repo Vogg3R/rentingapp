@@ -7,7 +7,16 @@ interface RequestListingPreviewCardProps {
   duration: string;
   city: string;
   requesterName: string;
+  requesterAvatarUrl?: string | null;
   imageSrc: string | null;
+}
+
+/** İsimden baş harf(ler)ini üretir (avatar fallback için). */
+function initialsFromName(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
 }
 
 export function RequestListingPreviewCard({
@@ -16,6 +25,7 @@ export function RequestListingPreviewCard({
   duration,
   city,
   requesterName,
+  requesterAvatarUrl,
   imageSrc,
 }: RequestListingPreviewCardProps) {
   const displayTitle = title.trim() || "Aranan ürün başlığı";
@@ -24,7 +34,7 @@ export function RequestListingPreviewCard({
       ? `₺${Number(budget).toLocaleString("tr-TR")} /gün`
       : "₺— /gün";
   const displayDuration = duration.trim() ? duration : "—";
-  const displayCity = city.trim() || "Girne";
+  const displayCity = city.trim() || "Konum belirtilmedi";
   const displayRequester = requesterName.trim() || "Talep Sahibi";
 
   return (
@@ -78,8 +88,18 @@ export function RequestListingPreviewCard({
         </div>
 
         <div className="mt-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-[var(--color-app-bg)] p-3 dark:border-slate-700">
-          <div className="flex size-9 items-center justify-center rounded-full bg-[#2563EB] text-sm font-bold text-white">
-            {displayRequester.slice(0, 1).toUpperCase()}
+          <div className="relative flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#2563EB] text-sm font-bold text-white">
+            {requesterAvatarUrl ? (
+              // Kullanıcının profil fotoğrafı varsa onu göster
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={requesterAvatarUrl}
+                alt={displayRequester}
+                className="absolute inset-0 size-full object-cover"
+              />
+            ) : (
+              initialsFromName(displayRequester)
+            )}
           </div>
           <div>
             <p className="text-sm font-semibold text-[var(--color-text)]">

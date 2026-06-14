@@ -12,6 +12,8 @@ class ItemRequestCreate(BaseModel):
     max_daily_budget: float = Field(ge=0)
     duration_days: int = Field(ge=1)
     location: str = Field(min_length=2, max_length=255)
+    # Base64 data URL (data:image/...;base64,...) — opsiyonel temsili görsel
+    image_base64: str | None = None
 
 
 class RequesterPreview(BaseModel):
@@ -33,6 +35,7 @@ class ItemRequestRead(BaseModel):
     max_daily_budget: Decimal
     duration_days: int
     location: str
+    image_base64: str | None = None
     status: str
     created_at: datetime
     requester: RequesterPreview | None = None

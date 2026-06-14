@@ -14,6 +14,7 @@ export interface Listing {
   min_days: number;
   max_days: number;
   location: string;
+  image_base64?: string | null;
   status: string;
   created_at: string;
   owner?: ListingOwnerPreview | null;
@@ -27,4 +28,5 @@ export interface ListingCreatePayload {
   min_days: number;
   max_days: number;
   location: string;
+  image_base64?: string | null;
 }

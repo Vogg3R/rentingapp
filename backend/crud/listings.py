@@ -18,6 +18,7 @@ def create_listing(
     min_days: int,
     max_days: int,
     location: str,
+    image_base64: str | None = None,
 ) -> Listing:
     row = Listing(
         owner_id=owner_id,
@@ -28,6 +29,7 @@ def create_listing(
         min_days=min_days,
         max_days=max_days,
         location=location,
+        image_base64=image_base64,
     )
     db.add(row)
     db.commit()

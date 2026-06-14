@@ -51,6 +51,8 @@ def apply_schema_patches() -> None:
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS linkedin VARCHAR(255)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_base64 TEXT",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_base64 TEXT",
+        "ALTER TABLE listings ADD COLUMN IF NOT EXISTS image_base64 TEXT",
+        "ALTER TABLE item_requests ADD COLUMN IF NOT EXISTS image_base64 TEXT",
     ]
     with engine.begin() as conn:
         for sql in patches:

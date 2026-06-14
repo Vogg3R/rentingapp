@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { fallbackNameFromEmail } from "@/lib/profile-images";
 import { isLoggedIn } from "@/lib/session";
 import { deleteListing } from "@/services/listings";
+import { deleteItemRequest } from "@/services/requests";
 import { fetchMyProfile } from "@/services/profile";
 import type { ProfileSummary } from "@/types/profile";
 import { useRouter } from "next/navigation";
@@ -55,6 +56,11 @@ export function UserProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [deletingListingId, setDeletingListingId] = useState<string | null>(null);
   const [pendingDeleteListing, setPendingDeleteListing] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [deletingRequestId, setDeletingRequestId] = useState<string | null>(null);
+  const [pendingDeleteRequest, setPendingDeleteRequest] = useState<{
     id: string;
     title: string;
   } | null>(null);
@@ -114,6 +120,45 @@ export function UserProfilePage() {
     );
     setToast("İlan başarıyla silindi");
   }, [pendingDeleteListing]);
+
+  const handleRequestDeleteRequest = useCallback(
+    (requestId: string, title: string) => {
+      setPendingDeleteRequest({ id: requestId, title });
+    },
+    []
+  );
+
+  const handleCancelDeleteRequest = useCallback(() => {
+    if (deletingRequestId) return;
+    setPendingDeleteRequest(null);
+  }, [deletingRequestId]);
+
+  const handleConfirmDeleteRequest = useCallback(async () => {
+    if (!pendingDeleteRequest) return;
+
+    const requestId = pendingDeleteRequest.id;
+    setDeletingRequestId(requestId);
+    const result = await deleteItemRequest(requestId);
+    setDeletingRequestId(null);
+
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+
+    setPendingDeleteRequest(null);
+    // Sayfa yenilenmeden silinen isteği state üzerinden anında kaldır.
+    setProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            requests: prev.requests.filter((item) => item.id !== requestId),
+            requests_count: Math.max(0, prev.requests_count - 1),
+          }
+        : prev
+    );
+    setToast("İstek ilanı başarıyla silindi");
+  }, [pendingDeleteRequest]);
 
   const displayName = useMemo(() => resolveDisplayName(profile), [profile]);
 
@@ -304,16 +349,28 @@ export function UserProfilePage() {
                     <li className="text-sm text-slate-500">Henüz istek ilanınız yok.</li>
                   )}
                   {profile.requests.map((req) => (
-                    <li key={req.id}>
+                    <li
+                      key={req.id}
+                      className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-primary dark:border-slate-700"
+                    >
                       <Link
                         href={`/talep/${req.id}`}
-                        className="block rounded-xl border border-slate-200 p-4 hover:border-primary dark:border-slate-700"
+                        className="min-w-0 flex-1 hover:text-primary"
                       >
                         <p className="font-bold">{req.title}</p>
                         <p className="text-sm text-slate-500">
                           {req.status} · max ₺{req.max_daily_budget}/gün
                         </p>
                       </Link>
+                      <button
+                        type="button"
+                        disabled={deletingRequestId === req.id}
+                        onClick={() => handleRequestDeleteRequest(req.id, req.title)}
+                        className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50"
+                      >
+                        <Trash2 className="size-4 shrink-0" aria-hidden />
+                        {deletingRequestId === req.id ? "Siliniyor..." : "Sil"}
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -343,6 +400,21 @@ export function UserProfilePage() {
         loading={deletingListingId !== null}
         onConfirm={() => void handleConfirmDeleteListing()}
         onCancel={handleCancelDeleteListing}
+      />
+
+      <ConfirmDialog
+        open={pendingDeleteRequest !== null}
+        title="İstek ilanını sil"
+        message={
+          pendingDeleteRequest
+            ? `"${pendingDeleteRequest.title}" istek ilanını kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`
+            : ""
+        }
+        confirmLabel="Evet, sil"
+        cancelLabel="Vazgeç"
+        loading={deletingRequestId !== null}
+        onConfirm={() => void handleConfirmDeleteRequest()}
+        onCancel={handleCancelDeleteRequest}
       />
 
       {toast ? (

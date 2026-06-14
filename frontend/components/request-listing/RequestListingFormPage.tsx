@@ -10,7 +10,10 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { isLoggedIn } from "@/lib/session";
+import { fallbackNameFromEmail, fileToDataUrl } from "@/lib/profile-images";
 import { createItemRequest } from "@/services/requests";
+import { fetchMyProfile } from "@/services/profile";
+import type { ProfileSummary } from "@/types/profile";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { LEFKOSA_CENTER } from "@/constants/google-maps";
@@ -54,6 +57,8 @@ export function RequestListingFormPage() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<string>(CATEGORY_SELECT_PLACEHOLDER);
   const [representativeImageName, setRepresentativeImageName] = useState("");
+  const [representativeImageFile, setRepresentativeImageFile] =
+    useState<File | null>(null);
   const [representativeImagePreviewUrl, setRepresentativeImagePreviewUrl] =
     useState<string | null>(null);
   const [description, setDescription] = useState("");
@@ -66,6 +71,7 @@ export function RequestListingFormPage() {
   const [rawAiText, setRawAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiToast, setAiToast] = useState<AiToast | null>(null);
+  const [profile, setProfile] = useState<ProfileSummary | null>(null);
 
   useEffect(() => {
     if (!aiToast) return;
@@ -73,7 +79,21 @@ export function RequestListingFormPage() {
     return () => window.clearTimeout(timer);
   }, [aiToast]);
 
+  // Önizleme kartında göstermek için aktif kullanıcının profilini çek.
+  useEffect(() => {
+    if (!isLoggedIn()) return;
+    let isMounted = true;
+    fetchMyProfile().then((res) => {
+      if (isMounted && res.ok) setProfile(res.data);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const setRepresentativeImageFromFile = useCallback((file: File | null) => {
+    // Base64'e çevirebilmek için dosyanın kendisini de saklıyoruz.
+    setRepresentativeImageFile(file);
     setRepresentativeImagePreviewUrl((previousUrl) => {
       if (previousUrl) {
         URL.revokeObjectURL(previousUrl);
@@ -98,10 +118,6 @@ export function RequestListingFormPage() {
       }
     };
   }, [representativeImagePreviewUrl]);
-
-  const handleSaveDraft = useCallback(() => {
-    window.alert("İstek ilanı taslak olarak kaydedildi (MVP).");
-  }, []);
 
   const generateWithAI = useCallback(async () => {
     if (!isLoggedIn()) {
@@ -157,6 +173,18 @@ export function RequestListingFormPage() {
       window.alert("Geçerli bir günlük bütçe girin.");
       return;
     }
+
+    // Seçilen temsili görseli Base64'e çevirip payload'a ekle.
+    let imageBase64: string | undefined;
+    if (representativeImageFile) {
+      try {
+        imageBase64 = await fileToDataUrl(representativeImageFile);
+      } catch {
+        window.alert("Görsel işlenemedi, lütfen tekrar deneyin.");
+        return;
+      }
+    }
+
     const res = await createItemRequest({
       title: title.trim(),
       category,
@@ -164,6 +192,7 @@ export function RequestListingFormPage() {
       max_daily_budget: budget,
       duration_days: days,
       location: address.trim(),
+      image_base64: imageBase64,
     });
     if (!res.ok) {
       window.alert(res.message);
@@ -178,6 +207,7 @@ export function RequestListingFormPage() {
     maxDailyBudget,
     requestDurationCount,
     address,
+    representativeImageFile,
   ]);
 
   const handleConditionToggle = useCallback((value: string) => {
@@ -188,9 +218,21 @@ export function RequestListingFormPage() {
     );
   }, []);
 
+  // Aktif kullanıcının görünen adı: ad > e-postadan türetilen > telefon.
   const requesterName = useMemo(() => {
-    return "Gökhan G.";
-  }, []);
+    if (!profile) return "";
+    return (
+      profile.name?.trim() ||
+      fallbackNameFromEmail(profile.email) ||
+      profile.phone ||
+      "Talep Sahibi"
+    );
+  }, [profile]);
+
+  // Önizleme konumu: formda adres seçildiyse o, yoksa profildeki varsayılan konum.
+  const previewCity = useMemo(() => {
+    return address.trim() || profile?.location?.trim() || "";
+  }, [address, profile]);
 
   const handleRepresentativeImagePaste = useCallback(
     (event: ClipboardEvent<HTMLDivElement>) => {
@@ -212,10 +254,7 @@ export function RequestListingFormPage() {
 
   return (
     <InteractivePageShell className="bg-[var(--color-app-bg)]">
-      <RequestListingHeader
-        onSaveDraft={handleSaveDraft}
-        onPublish={handlePublish}
-      />
+      <RequestListingHeader onPublish={handlePublish} />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -480,8 +519,9 @@ export function RequestListingFormPage() {
               title={title}
               budget={maxDailyBudget}
               duration={`${requestDurationCount || "1"} ${requestDuration}`}
-              city={address}
+              city={previewCity}
               requesterName={requesterName}
+              requesterAvatarUrl={profile?.avatar_base64 ?? null}
               imageSrc={representativeImagePreviewUrl}
             />
           </aside>

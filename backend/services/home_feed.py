@@ -21,7 +21,7 @@ def root_payload(db: Session) -> dict:
             {
                 "id": str(row.id),
                 "title": row.title,
-                "imageUrl": f"https://picsum.photos/seed/{row.id.hex[:16]}/800/520",
+                "imageUrl": row.image_base64,
                 "status": "available" if row.status == "active" else "rented",
                 "pricePerDay": float(row.daily_price),
                 "category": row.category,
@@ -36,6 +36,7 @@ def root_payload(db: Session) -> dict:
             {
                 "id": str(row.id),
                 "title": row.title,
+                "imageUrl": row.image_base64,
                 "maxDailyBudget": float(row.max_daily_budget),
                 "durationDays": row.duration_days,
                 "location": row.location,

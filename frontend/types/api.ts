@@ -4,7 +4,8 @@ export type RentalStatus = "available" | "rented";
 export interface RentalListing {
   id: string;
   title: string;
-  imageUrl: string;
+  /** Base64 data URL veya yoksa null/boş — kartlar gri fallback gösterir */
+  imageUrl?: string | null;
   status: RentalStatus;
   pricePerDay: number;
   /** Kategori slug — örn. kamp-dis-mekan */
@@ -17,6 +18,8 @@ export interface RentalListing {
 export interface ApiHomeItemRequest {
   id: string;
   title: string;
+  /** Base64 data URL veya yoksa null/boş — kart koyu lacivert fallback gösterir */
+  imageUrl?: string | null;
   maxDailyBudget: number;
   durationDays: number;
   location: string;

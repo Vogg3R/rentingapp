@@ -9,8 +9,7 @@ import { isLoggedIn } from "@/lib/session";
 import { createListingRentalRequest } from "@/services/listing-rentals";
 import { getListing } from "@/services/listings";
 import type { Listing } from "@/types/listings";
-import { MapPin, Package } from "lucide-react";
-import Image from "next/image";
+import { ImageOff, MapPin, Package } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -20,10 +19,6 @@ import {
   ListingRentalCard,
   type RentalRequestPayload,
 } from "./ListingRentalCard";
-
-function listingImageUrl(listingId: string): string {
-  return `https://picsum.photos/seed/eldenele-${listingId}/1200/800`;
-}
 
 interface ListingDetailPageProps {
   listingId: string;
@@ -128,14 +123,22 @@ export function ListingDetailPage({ listingId }: ListingDetailPageProps) {
             <div className="mt-8 grid items-start gap-8 md:grid-cols-3">
               <div className="min-w-0 space-y-6 md:col-span-2">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                  <Image
-                    src={listingImageUrl(listing.id)}
-                    alt={listing.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 66vw"
-                    priority
-                  />
+                  {listing.image_base64 ? (
+                    // Kullanıcının yüklediği Base64 görsel
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={listing.image_base64}
+                      alt={listing.title}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-slate-100 dark:bg-slate-800">
+                      <ImageOff
+                        className="size-16 text-slate-300 dark:text-slate-600"
+                        aria-hidden
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>

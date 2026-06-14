@@ -31,6 +31,16 @@ class MessageCreate(BaseModel):
     body: str = Field(min_length=1, max_length=4000)
 
 
+class MessageSenderPreview(BaseModel):
+    """Mesaj baloncuğunda gösterilen gönderen özeti (gizli bilgi yok)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str | None = None
+    avatar_base64: str | None = None
+
+
 class MessageRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -39,3 +49,4 @@ class MessageRead(BaseModel):
     sender_id: UUID
     body: str
     created_at: datetime
+    sender: MessageSenderPreview | None = None
