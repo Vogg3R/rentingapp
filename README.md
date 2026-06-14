@@ -39,6 +39,23 @@ Ana sayfa yalnızca API’den gelen gerçek ilanları gösterir (demo/mock veri 
 
 **Mimari:** UI bileşenleri yalnızca `frontend/services/` katmanını çağırır; backend’de `routers` → `services` → `crud` ayrımı uygulanır (mobil geçişe uygun).
 
+## Canlı ortam (hosting)
+
+MVP production ortamı üç servis üzerinde çalışır:
+
+
+| Bileşen    | Platform     | Canlı adres |
+| ---------- | ------------ | ----------- |
+| Frontend   | **Vercel**   | [https://rentingapp-gules.vercel.app](https://rentingapp-gules.vercel.app) |
+| Backend    | **Render**   | [https://rentingapp-scsj.onrender.com](https://rentingapp-scsj.onrender.com) |
+| Veritabanı | **Neon.tech** (Serverless PostgreSQL) | Neon dashboard üzerinden yönetilir; bağlantı `DATABASE_URL` ile Render’a verilir |
+
+- **Frontend → Vercel:** Next.js uygulaması `frontend/` klasöründen deploy edilir.
+- **Backend → Render:** FastAPI servisi `backend/` klasöründen deploy edilir.
+- **Veritabanı → Neon.tech:** PostgreSQL; connection string Render ortam değişkeni `DATABASE_URL` olarak tanımlanır.
+
+> Render free tier **cold start** yapabilir; ilk istek birkaç saniye–dakika gecikebilir. Ana sayfa boş görünürse sayfayı yenileyin veya backend’in uyanmasını bekleyin.
+
 ## Hızlı başlangıç
 
 ### 1. PostgreSQL
@@ -143,29 +160,35 @@ Anlaşmazlık iadesi: `POST /admin/deals/{deal_id}/refund`
 | `/profil/[id]`                   | Herkese açık kullanıcı profili                         |
 
 
-## Production deploy (Vercel + Render)
+## Production deploy rehberi
 
-Frontend **Vercel**, backend **Render**, veritabanı **Neon** ile çalışacak şekilde ayarlayın.
+Yeni bir ortam kurarken aynı üçlüyü kullanın: **Vercel** (frontend) + **Render** (backend) + **Neon.tech** (PostgreSQL).
+
+### Neon.tech (veritabanı)
+
+1. [neon.tech](https://neon.tech) üzerinde proje oluşturun.
+2. Connection string’i kopyalayın (`postgresql://...`).
+3. Bu değeri Render’daki `DATABASE_URL` ortam değişkenine yapıştırın.
 
 ### Render (backend)
 
-1. Repo'yu bağlayın; root directory: `backend`, start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+1. Repo’yu bağlayın; root directory: `backend`, start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
 2. Ortam değişkenleri:
-   - `DATABASE_URL` — Neon PostgreSQL connection string
+   - `DATABASE_URL` — Neon.tech PostgreSQL connection string
    - `JWT_SECRET` — güçlü rastgele secret
-   - `ALLOWED_ORIGINS` — `http://localhost:3000,https://SIZIN-VERCEL-ADRESINIZ.vercel.app`
-   - `FRONTEND_URL` — Vercel URL'niz
+   - `ALLOWED_ORIGINS` — `http://localhost:3000,https://rentingapp-gules.vercel.app`
+   - `FRONTEND_URL` — `https://rentingapp-gules.vercel.app`
    - (Opsiyonel) `GEMINI_API_KEY`, `GOOGLE_CLIENT_ID`, `ADMIN_API_KEY`
 
 ### Vercel (frontend)
 
 1. Root directory: `frontend`
 2. **Zorunlu** ortam değişkeni:
-   - `NEXT_PUBLIC_BACKEND_URL` = Render backend URL'niz (örn. `https://eldenele-api.onrender.com`)
+   - `NEXT_PUBLIC_BACKEND_URL` = `https://rentingapp-scsj.onrender.com`
 3. Değişkenleri ekledikten sonra **Redeploy** yapın (`NEXT_PUBLIC_*` build sırasında gömülür).
-4. Google OAuth kullanıyorsanız Google Cloud Console'da Authorized JavaScript origins'e Vercel adresinizi ekleyin.
+4. Google OAuth kullanıyorsanız Google Cloud Console’da Authorized JavaScript origins’e Vercel adresinizi ekleyin.
 
-> **Sık hata:** Vercel'de `NEXT_PUBLIC_BACKEND_URL` yoksa tarayıcı `http://127.0.0.1:8000`'e istek atar; bu da kayıt/giriş hatalarına yol açar.
+> **Sık hata:** Vercel’de `NEXT_PUBLIC_BACKEND_URL` yoksa tarayıcı `http://127.0.0.1:8000`’e istek atar; kayıt/giriş ve ana sayfa ilanları bu yüzden çalışmaz.
 
 ## Önerilen manuel test akışı
 
