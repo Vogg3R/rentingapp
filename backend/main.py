@@ -45,7 +45,7 @@ def _cors_origins() -> list[str]:
     """Virgülle ayrılmış izin verilen origin listesi (Vercel + localhost)."""
     raw = os.getenv(
         "ALLOWED_ORIGINS",
-        "http://localhost:3000,https://rentingapp-gules.vercel.app",
+        "http://localhost:3000,https://rentingapp-gules.vercel.app,https://eldenelekktc.com,https://www.eldenelekktc.com",
     )
     return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
