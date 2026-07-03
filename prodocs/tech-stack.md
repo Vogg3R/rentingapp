@@ -39,7 +39,7 @@ Sunucu tarafı iş mantığı, asenkron destekli modern bir web çatısı olan *
 | -------------------- | --------------------------------- |
 | **Veritabanı**       | Neon.tech (Serverless PostgreSQL) |
 | **Backend Hosting**  | Render                            |
-| **Frontend Hosting** | Vercel / Netlify                  |
+| **Frontend Hosting** | Vercel                 |
 | **Domain & DNS**     | Cloudflare (`eldenelekktc.com`)   |
 
 
