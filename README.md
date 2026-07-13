@@ -46,7 +46,7 @@ MVP production ortamı üç servis üzerinde çalışır:
 
 | Bileşen    | Platform     | Canlı adres |
 | ---------- | ------------ | ----------- |
-| Frontend   | **Vercel**   | [https://rentingapp-gules.vercel.app](https://rentingapp-gules.vercel.app) |
+| Frontend   | **Vercel**   | [eldenelekktc.com](eldenelekktc.com) |
 | Backend    | **Render**   | [https://rentingapp-scsj.onrender.com](https://rentingapp-scsj.onrender.com) |
 | Veritabanı | **Neon.tech** (Serverless PostgreSQL) | Neon dashboard üzerinden yönetilir; bağlantı `DATABASE_URL` ile Render’a verilir |
 
